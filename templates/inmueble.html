@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<h1>Detalle del Inmueble</h1>
+
+<p><b>Dirección:</b> {{ inmueble.direccion }}</p>
+<p><b>Propietario:</b> {{ inmueble.propietario }}</p>
+<p><b>Fecha recepción:</b> {{ inmueble.fecha_recepcion }}</p>
+
+<hr>
+
+<h2>Crear Inventario</h2>
+
+<form action="/crear_inventario/{{ inmueble.id }}" method="POST">
+
+<input type="text" name="nombre" placeholder="Nombre inventario" required>
+
+<input type="date" name="fecha" required>
+
+<button type="submit">Crear Inventario</button>
+
+</form>
+
+<hr>
+
+<h2>Inventarios del inmueble</h2>
+
+<ul>
+
+{% for inv in inventarios %}
+
+<li>
+
+<b>{{ inv.nombre }}</b> - {{ inv.fecha }}
+
+<a href="/inventario/{{ inv.id }}">
+Entrar al inventario
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+<br>
+
+<a href="/">⬅ Volver</a>
+
+{% endblock %}

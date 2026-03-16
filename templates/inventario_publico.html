@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Inventario</title>
+</head>
+
+<body>
+
+<h1>Inventario del Inmueble</h1>
+
+<h2>{{ inventario.nombre }}</h2>
+
+<hr>
+
+{% for s in secciones %}
+
+<h3>{{ s.nombre }}</h3>
+
+{% for foto in s.fotos %}
+
+{% if foto.archivo.endswith('.mp4') %}
+
+<video width="400" controls>
+<source src="/static/uploads/{{ foto.archivo }}" type="video/mp4">
+</video>
+
+{% else %}
+
+<img src="/static/uploads/{{ foto.archivo }}" width="400">
+
+{% endif %}
+
+<br><br>
+
+{% endfor %}
+
+{% for obs in s.observaciones %}
+
+<p>{{ obs.comentario }}</p>
+
+{% endfor %}
+
+<hr>
+
+{% endfor %}
+
+</body>
+
+</html>

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<h1>Inventario: {{ inventario.nombre }}</h1>
+
+<hr>
+
+<h3>Link público</h3>
+
+<p>
+<a href="/publico/{{ inventario.token }}" target="_blank">
+🔗 Ver inventario público
+</a>
+</p>
+
+<hr>
+
+<h2>Crear nueva sección</h2>
+
+<form action="/crear_seccion/{{ inventario.id }}" method="POST">
+
+<input type="text" name="nombre" placeholder="Nombre de la sección" required>
+
+<button type="submit">Crear sección</button>
+
+</form>
+
+<br>
+
+<a href="/inventario_pdf/{{ inventario.id }}">
+<button>📄 Generar PDF del inventario</button>
+</a>
+
+<hr>
+
+<h2>Secciones del inventario</h2>
+
+{% for s in secciones %}
+
+<div style="border:1px solid #ccc; padding:20px; margin-bottom:20px; border-radius:5px; background:white">
+
+<h3>{{ s.nombre }}</h3>
+
+<a href="/seccion/{{ s.id }}">
+<button>Entrar</button>
+</a>
+
+<a href="/editar_seccion/{{ s.id }}">
+<button>✏ Editar</button>
+</a>
+
+<a href="/eliminar_seccion/{{ s.id }}">
+<button>🗑 Eliminar</button>
+</a>
+
+</div>
+
+{% endfor %}
+
+<br>
+
+<a href="/inmueble/{{ inventario.inmueble_id }}">
+<button>⬅ Volver al inmueble</button>
+</a>
+
+<hr>
+
+<h2>Firma del inventario</h2>
+
+<form action="/guardar_firma/{{ inventario.id }}" method="POST">
+
+Nombre<br>
+<input type="text" name="nombre" required>
+
+<br><br>
+
+<canvas id="canvas" width="400" height="200" style="border:1px solid black"></canvas>
+
+<br><br>
+
+<input type="hidden" name="firma" id="firma">
+
+<button type="submit" onclick="guardarFirma()">Guardar firma</button>
+
+</form>
+
+<br>
+
+<button onclick="limpiar()">Limpiar</button>
+
+<script>
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let dibujando = false;
+
+canvas.addEventListener("mousedown", empezar);
+canvas.addEventListener("mouseup", terminar);
+canvas.addEventListener("mousemove", dibujar);
+
+canvas.addEventListener("touchstart", empezar);
+canvas.addEventListener("touchend", terminar);
+canvas.addEventListener("touchmove", dibujar);
+
+function empezar(){
+    dibujando = true;
+}
+
+function terminar(){
+    dibujando = false;
+    ctx.beginPath();
+}
+
+function dibujar(e){
+
+    if(!dibujando) return;
+
+    let rect = canvas.getBoundingClientRect();
+
+    let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+
+    ctx.lineTo(x,y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+}
+
+function limpiar(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+}
+
+function guardarFirma(){
+    let dataURL = canvas.toDataURL()
+    document.getElementById("firma").value = dataURL
+}
+
+</script>
+
+{% endblock %}

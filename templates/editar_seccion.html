@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Editar sección</title>
+</head>
+
+<body>
+
+<h1>Editar sección</h1>
+
+<form method="POST">
+
+<input type="text" name="nombre" value="{{ seccion.nombre }}">
+
+<br><br>
+
+<button type="submit">Guardar cambios</button>
+
+</form>
+
+<br>
+
+<a href="/inventario/{{ seccion.inventario_id }}">
+<button>⬅ Volver</button>
+</a>
+
+</body>
+
+</html>
