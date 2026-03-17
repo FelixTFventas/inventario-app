@@ -6,6 +6,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#1abc9c">
+
+
 <title>Inventario App</title>
 
 <style>
@@ -114,6 +118,12 @@ border-radius:5px;
 {% endblock %}
 
 </div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/service-worker.js')
+}
+</script>
 
 </body>
 </html>
