@@ -1,93 +1,135 @@
 {% extends "base.html" %}
 
-{% block contenido %}
+{% block title %}{{ seccion.nombre }} | Inventario App{% endblock %}
 
-<h1>{{ seccion.nombre }}</h1>
-
-<hr>
-
-<h2>Subir Fotos o Videos</h2>
-
-<form action="/subir_foto/{{ seccion.id }}" method="POST" enctype="multipart/form-data">
-
-<input type="file"
-name="fotos"
-multiple
-accept="image/*,video/*"
-capture="environment">
-
-<br><br>
-
-<button type="submit">📤 Subir archivos</button>
-
-</form>
-<hr>
-
-<h2>Galería</h2>
-
+{% block head_extra %}
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2/dist/css/lightbox.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Sección del inventario</span>
+      <h2>{{ seccion.nombre }}</h2>
+      <p>
+        Carga fotos o video, documenta observaciones y mantén evidencia ordenada por ambiente.
+      </p>
+      <div class="chip-row">
+        <span class="chip">{{ fotos|length }} archivos</span>
+        <span class="chip">{{ observaciones|length }} observaciones</span>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <div class="metric">
+        <span class="metric-label">Estado de la sección</span>
+        <span class="metric-value" style="font-size:1.35rem;">En revisión</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Acceso rápido</span>
+        <span class="metric-value">{{ seccion.id }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block contenido %}
+<section class="section split-layout">
+  <article class="upload-panel fade-in delay-1">
+    <h3>Subir fotos o videos</h3>
+    <p class="muted">Selecciona varios archivos desde computador o captura rápida en móvil.</p>
+
+    <form action="/subir_foto/{{ seccion.id }}" method="POST" enctype="multipart/form-data" class="stack">
+      <div>
+        <label for="fotos">Archivos</label>
+        <input id="fotos" type="file" name="fotos" multiple accept="image/*,video/*" capture="environment">
+      </div>
+      <div class="inline-actions">
+        <button type="submit">Subir archivos</button>
+      </div>
+    </form>
+  </article>
+
+  <aside class="info-panel fade-in delay-2">
+    <h3>Navegación</h3>
+    <div class="stack">
+      <a class="button button-secondary" href="/inventario/{{ inventario_id }}">Volver al inventario</a>
+      <a class="button button-secondary" href="/">Ir al dashboard</a>
+      <p class="muted">Cada archivo queda disponible para revisión rápida y visualización ampliada.</p>
+    </div>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Galería</h2>
+      <p>Explora la evidencia de esta sección con un grid más legible.</p>
+    </div>
+  </div>
+
+  {% if fotos %}
+  <div class="gallery-grid">
+    {% for foto in fotos %}
+    <article class="media-card fade-in delay-1">
+      {% if foto.archivo.endswith('.mp4') %}
+      <video controls>
+        <source src="/static/uploads/{{ foto.archivo }}">
+      </video>
+      {% else %}
+      <a href="/static/uploads/{{ foto.archivo }}" data-lightbox="galeria" data-title="{{ seccion.nombre }}">
+        <img src="/static/uploads/{{ foto.archivo }}" alt="Archivo de {{ seccion.nombre }}">
+      </a>
+      {% endif %}
+      <div class="media-meta">
+        <span class="chip">{{ foto.archivo }}</span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">No hay archivos cargados</h3>
+    <p>Sube fotos o videos para documentar esta sección.</p>
+  </div>
+  {% endif %}
+</section>
+
+<section class="section split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Agregar observación</h3>
+    <form action="/crear_observacion/{{ seccion.id }}" method="POST" class="stack">
+      <div>
+        <label for="comentario">Comentario</label>
+        <textarea id="comentario" name="comentario" placeholder="Ej. Se evidencia desgaste en pintura o pendiente de reparación"></textarea>
+      </div>
+      <div class="inline-actions">
+        <button type="submit">Guardar observación</button>
+      </div>
+    </form>
+  </article>
+
+  <aside class="surface-card fade-in delay-2">
+    <h3>Observaciones registradas</h3>
+    {% if observaciones %}
+    <div class="stack">
+      {% for o in observaciones %}
+      <article class="observation-card">
+        <p>{{ o.comentario }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>No hay observaciones aún para esta sección.</p>
+    </div>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/lightbox2@2/dist/js/lightbox.min.js"></script>
-
-<div style="display:flex; flex-wrap:wrap; gap:20px;">
-
-{% for foto in fotos %}
-
-<div style="border:1px solid #ccc; padding:10px; border-radius:8px; background:white">
-
-{% if foto.archivo.endswith('.mp4') %}
-
-<video width="250" controls>
-<source src="/static/uploads/{{ foto.archivo }}">
-</video>
-
-{% else %}
-
-<a href="/static/uploads/{{ foto.archivo }}" data-lightbox="galeria">
-
-<img src="/static/uploads/{{ foto.archivo }}" width="250" style="border-radius:8px">
-
-</a>
-
-{% endif %}
-
-</div>
-
-{% endfor %}
-
-</div>
-
-<hr>
-
-<h2>Observaciones</h2>
-
-<form action="/crear_observacion/{{ seccion.id }}" method="POST">
-
-<textarea name="comentario" rows="4" cols="50" placeholder="Escribe una observación"></textarea>
-
-<br><br>
-
-<button type="submit">Guardar observación</button>
-
-</form>
-
-<br>
-
-{% for o in observaciones %}
-
-<div style="background:#f5f5f5; padding:10px; margin-bottom:10px; border-radius:5px">
-{{ o.comentario }}
-</div>
-
-{% endfor %}
-
-<hr>
-
-<a href="/inventario/{{ inventario_id }}">
-<button>⬅ Volver al inventario</button>
-</a>
-
-<a href="/">
-<button>🏠 Inicio</button>
-</a>
-
 {% endblock %}

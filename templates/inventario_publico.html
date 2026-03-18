@@ -1,50 +1,70 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="es">
 <head>
-<title>Inventario</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ inventario.nombre }} | Inventario público</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
 </head>
-
 <body>
+  <div class="public-shell">
+    <header class="public-header fade-in">
+      <span class="eyebrow">Inventario público</span>
+      <h1>{{ inventario.nombre }}</h1>
+      <p class="public-meta">Consulta visual de secciones, evidencia multimedia y observaciones asociadas.</p>
+      <div class="chip-row">
+        <span class="chip">{{ secciones|length }} secciones</span>
+        <span class="chip">Documento compartido</span>
+      </div>
+    </header>
 
-<h1>Inventario del Inmueble</h1>
+    <section class="public-grid">
+      {% for s in secciones %}
+      <article class="public-section fade-in delay-1">
+        <div class="section-heading">
+          <div>
+            <h2>{{ s.nombre }}</h2>
+            <p>{{ s.fotos|length }} archivos y {{ s.observaciones|length }} observaciones.</p>
+          </div>
+        </div>
 
-<h2>{{ inventario.nombre }}</h2>
+        {% if s.fotos %}
+        <div class="public-media">
+          {% for foto in s.fotos %}
+            {% if foto.archivo.endswith('.mp4') %}
+            <video controls>
+              <source src="/static/uploads/{{ foto.archivo }}" type="video/mp4">
+            </video>
+            {% else %}
+            <img src="/static/uploads/{{ foto.archivo }}" alt="Archivo de {{ s.nombre }}">
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <p>No hay evidencia multimedia registrada en esta sección.</p>
+        </div>
+        {% endif %}
 
-<hr>
-
-{% for s in secciones %}
-
-<h3>{{ s.nombre }}</h3>
-
-{% for foto in s.fotos %}
-
-{% if foto.archivo.endswith('.mp4') %}
-
-<video width="400" controls>
-<source src="/static/uploads/{{ foto.archivo }}" type="video/mp4">
-</video>
-
-{% else %}
-
-<img src="/static/uploads/{{ foto.archivo }}" width="400">
-
-{% endif %}
-
-<br><br>
-
-{% endfor %}
-
-{% for obs in s.observaciones %}
-
-<p>{{ obs.comentario }}</p>
-
-{% endfor %}
-
-<hr>
-
-{% endfor %}
-
+        <div class="public-observations stack">
+          {% if s.observaciones %}
+            {% for obs in s.observaciones %}
+            <article class="observation-card">
+              <p>{{ obs.comentario }}</p>
+            </article>
+            {% endfor %}
+          {% else %}
+          <div class="empty-state">
+            <p>No hay observaciones cargadas en esta sección.</p>
+          </div>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+  </div>
 </body>
-
 </html>

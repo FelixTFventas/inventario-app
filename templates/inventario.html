@@ -1,145 +1,195 @@
 {% extends "base.html" %}
 
+{% block title %}{{ inventario.nombre }} | Inventario App{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Inventario activo</span>
+      <h2>{{ inventario.nombre }}</h2>
+      <p>
+        Organiza secciones, genera el PDF final y captura firma digital sin salir de esta vista.
+      </p>
+      <div class="chip-row">
+        <span class="chip">Fecha {{ inventario.fecha }}</span>
+        <span class="chip">{{ secciones|length }} secciones</span>
+      </div>
+      <div class="hero-actions">
+        <a class="button" href="/publico/{{ inventario.token }}" target="_blank">Ver link público</a>
+        <a class="button button-secondary" href="/inventario_pdf/{{ inventario.id }}">Generar PDF</a>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <div class="metric">
+        <span class="metric-label">Inventario compartible</span>
+        <span class="metric-value" style="font-size:1.4rem;">Token activo</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Acceso rápido</span>
+        <span class="metric-value">{{ inventario.id }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
 {% block contenido %}
+<section class="section split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Crear nueva sección</h3>
+    <p class="muted">Añade zonas adicionales cuando el inmueble requiera un detalle más fino.</p>
 
-<h1>Inventario: {{ inventario.nombre }}</h1>
+    <form action="/crear_seccion/{{ inventario.id }}" method="POST" class="stack">
+      <div>
+        <label for="nombre-seccion">Nombre de la sección</label>
+        <input id="nombre-seccion" type="text" name="nombre" placeholder="Ej. Balcón principal" required>
+      </div>
+      <div class="inline-actions">
+        <button type="submit">Crear sección</button>
+        <a class="button button-secondary" href="/inmueble/{{ inventario.inmueble_id }}">Volver al inmueble</a>
+      </div>
+    </form>
+  </article>
 
-<hr>
+  <aside class="info-panel fade-in delay-2">
+    <h3>Herramientas rápidas</h3>
+    <div class="stack">
+      <a class="button" href="/publico/{{ inventario.token }}" target="_blank">Abrir vista pública</a>
+      <a class="button button-secondary" href="/inventario_pdf/{{ inventario.id }}">Descargar PDF</a>
+      <p class="muted">Comparte el enlace público con clientes o equipo operativo sin exponer el panel administrativo.</p>
+    </div>
+  </aside>
+</section>
 
-<h3>Link público</h3>
+<section class="section">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Secciones del inventario</h2>
+      <p>Administra cada ambiente y entra a su galería de archivos y observaciones.</p>
+    </div>
+  </div>
 
-<p>
-<a href="/publico/{{ inventario.token }}" target="_blank">
-🔗 Ver inventario público
-</a>
-</p>
+  {% if secciones %}
+  <div class="card-grid">
+    {% for s in secciones %}
+    <article class="list-card fade-in delay-1">
+      <div class="chip-row">
+        <span class="chip">Sección {{ loop.index }}</span>
+      </div>
+      <h3 class="card-title">{{ s.nombre }}</h3>
+      <p class="muted">Actualiza evidencia, observaciones o nombre de la sección.</p>
+      <div class="card-actions">
+        <a class="button" href="/seccion/{{ s.id }}">Entrar</a>
+        <a class="button button-secondary" href="/editar_seccion/{{ s.id }}">Editar</a>
+        <a class="button button-danger" href="/eliminar_seccion/{{ s.id }}">Eliminar</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">No hay secciones registradas</h3>
+    <p>Crea una nueva sección para comenzar a cargar contenido.</p>
+  </div>
+  {% endif %}
+</section>
 
-<hr>
+<section class="section signature-panel fade-in delay-2">
+  <div class="section-heading">
+    <div>
+      <h2>Firma del inventario</h2>
+      <p>Recoge una firma simple y guárdala junto al documento final.</p>
+    </div>
+  </div>
 
-<h2>Crear nueva sección</h2>
+  <form action="/guardar_firma/{{ inventario.id }}" method="POST" class="stack" onsubmit="guardarFirma()">
+    <div>
+      <label for="firma-nombre">Nombre de quien firma</label>
+      <input id="firma-nombre" type="text" name="nombre" required>
+    </div>
 
-<form action="/crear_seccion/{{ inventario.id }}" method="POST">
+    <div class="canvas-shell">
+      <canvas id="canvas" width="700" height="280"></canvas>
+    </div>
 
-<input type="text" name="nombre" placeholder="Nombre de la sección" required>
+    <input type="hidden" name="firma" id="firma">
 
-<button type="submit">Crear sección</button>
+    <div class="split-actions">
+      <button type="submit">Guardar firma</button>
+      <button type="button" class="button button-secondary" onclick="limpiar()">Limpiar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
 
-</form>
-
-<br>
-
-<a href="/inventario_pdf/{{ inventario.id }}">
-<button>📄 Generar PDF del inventario</button>
-</a>
-
-<hr>
-
-<h2>Secciones del inventario</h2>
-
-{% for s in secciones %}
-
-<div style="border:1px solid #ccc; padding:20px; margin-bottom:20px; border-radius:5px; background:white">
-
-<h3>{{ s.nombre }}</h3>
-
-<a href="/seccion/{{ s.id }}">
-<button>Entrar</button>
-</a>
-
-<a href="/editar_seccion/{{ s.id }}">
-<button>✏ Editar</button>
-</a>
-
-<a href="/eliminar_seccion/{{ s.id }}">
-<button>🗑 Eliminar</button>
-</a>
-
-</div>
-
-{% endfor %}
-
-<br>
-
-<a href="/inmueble/{{ inventario.inmueble_id }}">
-<button>⬅ Volver al inmueble</button>
-</a>
-
-<hr>
-
-<h2>Firma del inventario</h2>
-
-<form action="/guardar_firma/{{ inventario.id }}" method="POST">
-
-Nombre<br>
-<input type="text" name="nombre" required>
-
-<br><br>
-
-<canvas id="canvas" width="400" height="200" style="border:1px solid black"></canvas>
-
-<br><br>
-
-<input type="hidden" name="firma" id="firma">
-
-<button type="submit" onclick="guardarFirma()">Guardar firma</button>
-
-</form>
-
-<br>
-
-<button onclick="limpiar()">Limpiar</button>
-
+{% block scripts %}
 <script>
+  const canvas = document.getElementById("canvas")
+  const ctx = canvas.getContext("2d")
+  let dibujando = false
 
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
+  function ajustarCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1)
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * ratio
+    canvas.height = 280 * ratio
+    ctx.scale(ratio, ratio)
+    ctx.lineWidth = 2.5
+    ctx.lineCap = "round"
+    ctx.strokeStyle = "#2f241d"
+  }
 
-let dibujando = false;
+  function obtenerPosicion(event) {
+    const rect = canvas.getBoundingClientRect()
+    const punto = event.touches ? event.touches[0] : event
+    return {
+      x: punto.clientX - rect.left,
+      y: punto.clientY - rect.top
+    }
+  }
 
-canvas.addEventListener("mousedown", empezar);
-canvas.addEventListener("mouseup", terminar);
-canvas.addEventListener("mousemove", dibujar);
+  function empezar(event) {
+    event.preventDefault()
+    dibujando = true
+    const { x, y } = obtenerPosicion(event)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+  }
 
-canvas.addEventListener("touchstart", empezar);
-canvas.addEventListener("touchend", terminar);
-canvas.addEventListener("touchmove", dibujar);
+  function terminar(event) {
+    if (event) {
+      event.preventDefault()
+    }
+    dibujando = false
+    ctx.beginPath()
+  }
 
-function empezar(){
-    dibujando = true;
-}
+  function dibujar(event) {
+    if (!dibujando) return
+    event.preventDefault()
+    const { x, y } = obtenerPosicion(event)
+    ctx.lineTo(x, y)
+    ctx.stroke()
+  }
 
-function terminar(){
-    dibujando = false;
-    ctx.beginPath();
-}
+  function limpiar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
 
-function dibujar(e){
+  function guardarFirma() {
+    document.getElementById("firma").value = canvas.toDataURL()
+  }
 
-    if(!dibujando) return;
-
-    let rect = canvas.getBoundingClientRect();
-
-    let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-
-    ctx.lineTo(x,y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x,y);
-}
-
-function limpiar(){
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-}
-
-function guardarFirma(){
-    let dataURL = canvas.toDataURL()
-    document.getElementById("firma").value = dataURL
-}
-
+  window.addEventListener("resize", ajustarCanvas)
+  canvas.addEventListener("mousedown", empezar)
+  canvas.addEventListener("mouseup", terminar)
+  canvas.addEventListener("mouseleave", terminar)
+  canvas.addEventListener("mousemove", dibujar)
+  canvas.addEventListener("touchstart", empezar, { passive: false })
+  canvas.addEventListener("touchend", terminar, { passive: false })
+  canvas.addEventListener("touchmove", dibujar, { passive: false })
+  ajustarCanvas()
 </script>
-
 {% endblock %}

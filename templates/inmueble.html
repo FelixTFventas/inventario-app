@@ -1,51 +1,108 @@
 {% extends "base.html" %}
 
+{% block title %}{{ inmueble.direccion }} | Inventario App{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Detalle del inmueble</span>
+      <h2>{{ inmueble.direccion }}</h2>
+      <p>
+        Propietario {{ inmueble.propietario }}. Usa esta vista para crear inventarios y revisar el historial de entregas del inmueble.
+      </p>
+      <div class="chip-row">
+        <span class="chip">Recepción {{ inmueble.fecha_recepcion }}</span>
+        <span class="chip">ID {{ inmueble.id }}</span>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <div class="metric">
+        <span class="metric-label">Inventarios del inmueble</span>
+        <span class="metric-value">{{ inventarios|length }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Siguiente acción</span>
+        <span class="metric-value" style="font-size:1.4rem;">Crear o revisar</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
 {% block contenido %}
+<section class="section split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Crear inventario</h3>
+    <p class="muted">Genera un nuevo checklist para entrega, revisión o seguimiento del inmueble.</p>
 
-<h1>Detalle del Inmueble</h1>
+    <form action="/crear_inventario/{{ inmueble.id }}" method="POST" class="stack">
+      <div>
+        <label for="nombre">Nombre del inventario</label>
+        <input id="nombre" type="text" name="nombre" placeholder="Ej. Entrega marzo 2026" required>
+      </div>
 
-<p><b>Dirección:</b> {{ inmueble.direccion }}</p>
-<p><b>Propietario:</b> {{ inmueble.propietario }}</p>
-<p><b>Fecha recepción:</b> {{ inmueble.fecha_recepcion }}</p>
+      <div>
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="date" name="fecha" required>
+      </div>
 
-<hr>
+      <div class="inline-actions">
+        <button type="submit">Crear inventario</button>
+        <a class="button button-secondary" href="/">Volver al dashboard</a>
+      </div>
+    </form>
+  </article>
 
-<h2>Crear Inventario</h2>
+  <aside class="info-panel fade-in delay-2">
+    <h3>Datos clave</h3>
+    <div class="stack">
+      <div>
+        <label>Dirección</label>
+        <div class="chip">{{ inmueble.direccion }}</div>
+      </div>
+      <div>
+        <label>Propietario</label>
+        <div class="chip">{{ inmueble.propietario }}</div>
+      </div>
+      <div>
+        <label>Fecha de recepción</label>
+        <div class="chip">{{ inmueble.fecha_recepcion }}</div>
+      </div>
+    </div>
+  </aside>
+</section>
 
-<form action="/crear_inventario/{{ inmueble.id }}" method="POST">
+<section class="section">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Inventarios del inmueble</h2>
+      <p>Selecciona un inventario para subir evidencia, observaciones y firmas.</p>
+    </div>
+  </div>
 
-<input type="text" name="nombre" placeholder="Nombre inventario" required>
-
-<input type="date" name="fecha" required>
-
-<button type="submit">Crear Inventario</button>
-
-</form>
-
-<hr>
-
-<h2>Inventarios del inmueble</h2>
-
-<ul>
-
-{% for inv in inventarios %}
-
-<li>
-
-<b>{{ inv.nombre }}</b> - {{ inv.fecha }}
-
-<a href="/inventario/{{ inv.id }}">
-Entrar al inventario
-</a>
-
-</li>
-
-{% endfor %}
-
-</ul>
-
-<br>
-
-<a href="/">⬅ Volver</a>
-
+  {% if inventarios %}
+  <div class="card-grid">
+    {% for inv in inventarios %}
+    <article class="list-card fade-in delay-1">
+      <div class="chip-row">
+        <span class="chip">{{ inv.fecha }}</span>
+        <span class="chip">Token público activo</span>
+      </div>
+      <h3 class="card-title">{{ inv.nombre }}</h3>
+      <p class="muted">Accede al inventario completo y administra sus secciones.</p>
+      <div class="card-actions">
+        <a class="button" href="/inventario/{{ inv.id }}">Entrar al inventario</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">Sin inventarios todavía</h3>
+    <p>Crea el primer inventario de este inmueble para empezar el registro técnico.</p>
+  </div>
+  {% endif %}
+</section>
 {% endblock %}

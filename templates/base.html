@@ -1,129 +1,53 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="es">
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#1abc9c">
-
-
-<title>Inventario App</title>
-
-<style>
-
-body{
-margin:0;
-font-family: Arial, sans-serif;
-display:flex;
-background:#f5f6fa;
-}
-
-/* MENU LATERAL */
-
-.sidebar{
-
-width:220px;
-background:#2c3e50;
-color:white;
-height:100vh;
-padding:20px;
-position:fixed;
-left:0;
-top:0;
-
-}
-
-.sidebar h2{
-text-align:center;
-margin-bottom:30px;
-}
-
-.sidebar a{
-
-display:block;
-color:white;
-padding:12px;
-text-decoration:none;
-margin-top:10px;
-background:#34495e;
-border-radius:5px;
-transition:0.3s;
-
-}
-
-.sidebar a:hover{
-background:#1abc9c;
-}
-
-/* CONTENIDO */
-
-.content{
-
-margin-left:240px;
-padding:30px;
-width:100%;
-
-}
-
-/* BOTONES */
-
-button{
-
-background:#3498db;
-color:white;
-border:none;
-padding:10px 15px;
-border-radius:5px;
-cursor:pointer;
-
-}
-
-button:hover{
-background:#2980b9;
-}
-
-input, textarea{
-
-padding:8px;
-border:1px solid #ccc;
-border-radius:5px;
-
-}
-
-</style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#b85c38">
+  <title>{% block title %}Inventario App{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  {% block head_extra %}{% endblock %}
 </head>
-
 <body>
+  <header class="topbar fade-in">
+    <div class="topbar-shell">
+      <a class="brand brand-link" href="/">
+        <div class="brand-mark">IF</div>
+        <div class="brand-copy">
+          <h1>Inventario Felix</h1>
+          <p>Control visual y trazabilidad.</p>
+        </div>
+      </a>
 
-<div class="sidebar">
+      <nav class="topnav">
+        <a class="topnav-link {% if request.path == '/' %}is-active{% endif %}" href="/">Dashboard</a>
+        <a class="topnav-link" href="/">Inmuebles</a>
+        {% if current_user.is_authenticated %}
+        <a class="topnav-link" href="/logout">Cerrar sesión</a>
+        {% else %}
+        <a class="topnav-link" href="/login">Iniciar sesión</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
 
-<h2>Inventario</h2>
+  <div class="layout">
+    <main class="main main-full">
+      {% block hero %}{% endblock %}
 
-<a href="/">🏠 Dashboard</a>
+      {% block contenido %}{% endblock %}
+    </main>
+  </div>
 
-<a href="/">🏢 Inmuebles</a>
-
-<a href="/logout">🚪 Cerrar sesión</a>
-
-</div>
-
-<div class="content">
-
-{% block contenido %}
-
-{% endblock %}
-
-</div>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/service-worker.js')
-}
-</script>
-
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/service-worker.js")
+    }
+  </script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

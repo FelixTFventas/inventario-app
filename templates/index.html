@@ -1,74 +1,140 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard | Inventario App{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Centro de control</span>
+      <h1>Gestiona inventarios de inmuebles con una vista clara y elegante.</h1>
+      <p>
+        Crea propiedades, revisa evidencia capturada y mantén cada entrega documentada en un mismo flujo.
+      </p>
+      <div class="hero-actions">
+        <a class="button" href="#crear-inmueble">Nuevo inmueble</a>
+        <a class="button button-secondary" href="#lista-inmuebles">Ver inmuebles</a>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <div class="metric">
+        <span class="metric-label">Inventarios con respaldo visual</span>
+        <span class="metric-value">{{ total_inventarios }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Propiedades registradas</span>
+        <span class="metric-value">{{ total_inmuebles }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Fotos y videos almacenados</span>
+        <span class="metric-value">{{ total_fotos }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
 {% block contenido %}
+<section class="section fade-in delay-1">
+  <div class="stats-grid">
+    <article class="stat-card">
+      <strong>{{ total_inmuebles }}</strong>
+      <span>Inmuebles activos</span>
+    </article>
+    <article class="stat-card">
+      <strong>{{ total_inventarios }}</strong>
+      <span>Inventarios documentados</span>
+    </article>
+    <article class="stat-card">
+      <strong>{{ total_fotos }}</strong>
+      <span>Archivos multimedia</span>
+    </article>
+  </div>
+</section>
 
-<h1>Dashboard</h1>
+<section class="section split-layout">
+  <article class="form-card fade-in delay-2" id="crear-inmueble">
+    <div class="section-heading">
+      <div>
+        <h2>Crear inmueble</h2>
+        <p>Registra una propiedad nueva con los datos base de recepción.</p>
+      </div>
+    </div>
 
-<hr>
+    <form action="/crear" method="POST" class="stack">
+      <div>
+        <label for="direccion">Dirección</label>
+        <input id="direccion" type="text" name="direccion" placeholder="Ej. Cra 12 #18-45" required>
+      </div>
 
-<div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div>
+        <label for="propietario">Propietario</label>
+        <input id="propietario" type="text" name="propietario" placeholder="Nombre del propietario" required>
+      </div>
 
-<div style="background:white;padding:30px;border-radius:8px;width:200px;text-align:center;box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
-<h2>{{ total_inmuebles }}</h2>
-<p>Inmuebles</p>
-</div>
+      <div>
+        <label for="fecha">Fecha de recepción</label>
+        <input id="fecha" type="date" name="fecha" required>
+      </div>
 
-<div style="background:white;padding:30px;border-radius:8px;width:200px;text-align:center;box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
-<h2>{{ total_inventarios }}</h2>
-<p>Inventarios</p>
-</div>
+      <div class="inline-actions">
+        <button type="submit">Crear inmueble</button>
+      </div>
+    </form>
+  </article>
 
-<div style="background:white;padding:30px;border-radius:8px;width:200px;text-align:center;box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
-<h2>{{ total_fotos }}</h2>
-<p>Fotos / Videos</p>
-</div>
+  <aside class="info-panel fade-in delay-3">
+    <h3>Flujo recomendado</h3>
+    <div class="stack">
+      <div>
+        <div class="chip-row">
+          <span class="chip">1. Registrar inmueble</span>
+          <span class="chip">2. Crear inventario</span>
+        </div>
+      </div>
+      <div>
+        <div class="chip-row">
+          <span class="chip">3. Cargar evidencia</span>
+          <span class="chip">4. Firmar y compartir</span>
+        </div>
+      </div>
+      <p class="muted">
+        El panel ahora prioriza lectura rápida en escritorio y uso táctil en móvil para inspecciones en sitio.
+      </p>
+    </div>
+  </aside>
+</section>
 
-</div>
+<section class="section" id="lista-inmuebles">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Lista de inmuebles</h2>
+      <p>Accede al detalle de cada propiedad y entra a sus inventarios.</p>
+    </div>
+  </div>
 
-<hr>
-
-<h2>Crear Inmueble</h2>
-
-<form action="/crear" method="POST">
-
-<input type="text" name="direccion" placeholder="Dirección">
-
-<br><br>
-
-<input type="text" name="propietario" placeholder="Propietario">
-
-<br><br>
-
-<input type="date" name="fecha">
-
-<br><br>
-
-<button type="submit">Crear Inmueble</button>
-
-</form>
-
-<hr>
-
-<h2>Lista de Inmuebles</h2>
-
-{% for inmueble in inmuebles %}
-
-<div style="background:white;padding:15px;margin-bottom:10px;border-radius:5px">
-
-<b>{{ inmueble.direccion }}</b>
-
-<br>
-
-{{ inmueble.propietario }}
-
-<br><br>
-
-<a href="/inmueble/{{ inmueble.id }}">
-<button>Ver inmueble</button>
-</a>
-
-</div>
-
-{% endfor %}
-
+  {% if inmuebles %}
+  <div class="card-grid">
+    {% for inmueble in inmuebles %}
+    <article class="content-card fade-in delay-1">
+      <div class="chip-row">
+        <span class="chip">ID {{ inmueble.id }}</span>
+        <span class="chip">Recepción {{ inmueble.fecha_recepcion }}</span>
+      </div>
+      <h3 class="card-title">{{ inmueble.direccion }}</h3>
+      <p class="muted">Propietario: {{ inmueble.propietario }}</p>
+      <div class="card-actions">
+        <a class="button" href="/inmueble/{{ inmueble.id }}">Ver inmueble</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">Aun no hay inmuebles</h3>
+    <p>Crea el primero desde el formulario para empezar a documentar entregas.</p>
+  </div>
+  {% endif %}
+</section>
 {% endblock %}
