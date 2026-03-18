@@ -1,30 +1,43 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-<title>Editar sección</title>
-</head>
+{% block title %}Editar sección | Inventario App{% endblock %}
 
-<body>
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Ajuste rápido</span>
+      <h2>Editar sección</h2>
+      <p>Renombra la sección para mantener el inventario organizado y consistente.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
 
-<h1>Editar sección</h1>
+{% block contenido %}
+<section class="section split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Nombre visible</h3>
+    <form method="POST" class="stack">
+      <div>
+        <label for="nombre">Nombre de la sección</label>
+        <input id="nombre" type="text" name="nombre" value="{{ seccion.nombre }}" required>
+      </div>
 
-<form method="POST">
+      <div class="inline-actions">
+        <button type="submit">Guardar cambios</button>
+        <a class="button button-secondary" href="/inventario/{{ seccion.inventario_id }}">Volver</a>
+      </div>
+    </form>
+  </article>
 
-<input type="text" name="nombre" value="{{ seccion.nombre }}">
-
-<br><br>
-
-<button type="submit">Guardar cambios</button>
-
-</form>
-
-<br>
-
-<a href="/inventario/{{ seccion.inventario_id }}">
-<button>⬅ Volver</button>
-</a>
-
-</body>
-
-</html>
+  <aside class="info-panel fade-in delay-2">
+    <h3>Contexto</h3>
+    <div class="stack">
+      <span class="chip">ID sección {{ seccion.id }}</span>
+      <span class="chip">Inventario {{ seccion.inventario_id }}</span>
+      <p class="muted">Usa nombres específicos para facilitar búsquedas y el armado del PDF.</p>
+    </div>
+  </aside>
+</section>
+{% endblock %}
