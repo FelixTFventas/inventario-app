@@ -85,6 +85,12 @@
       {% endif %}
       <div class="media-meta">
         <span class="chip">{{ foto.archivo }}</span>
+        
+        <form action="/eliminar_foto/{{ foto.id }}" method="POST" style="margin-top: 8px;">
+          <button class="button-danger" onclick="return confirm('¿Eliminar este archivo?')">
+            Eliminar
+          </button>
+       </form>
       </div>
     </article>
     {% endfor %}

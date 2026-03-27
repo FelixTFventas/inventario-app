@@ -280,6 +280,29 @@ def crear_observacion(id):
     return redirect(f"/seccion/{id}")
 
 # -----------------------------
+# ELIMINAR FOTO
+# -----------------------------
+@app.route("/eliminar_foto/<int:id>", methods=["POST"])
+def eliminar_foto(id):
+
+    foto = Foto.query.get_or_404(id)
+
+    seccion_id = foto.seccion_id
+
+    # Ruta del archivo
+    ruta = os.path.join(app.config["UPLOAD_FOLDER"], foto.archivo)
+
+    # Eliminar archivo físico
+    if os.path.exists(ruta):
+        os.remove(ruta)
+
+    # Eliminar de la base de datos
+    db.session.delete(foto)
+    db.session.commit()
+
+    return redirect(f"/seccion/{seccion_id}")
+
+# -----------------------------
 # CREAR SECCION MANUAL
 # -----------------------------
 @app.route("/crear_seccion/<int:id>", methods=["POST"])
