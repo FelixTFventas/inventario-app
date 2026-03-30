@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Empresas | Superadmin{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid dashboard-hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Panel del propietario</span>
+      <h2>Gestiona empresas, accesos y continuidad del servicio.</h2>
+      <p>
+        Crea nuevas empresas manualmente, define su admin principal, controla el estado comercial y entra a revisar cualquier operacion cuando lo necesites.
+      </p>
+      <div class="property-meta">
+        <span class="chip">{{ empresas|length }} empresas</span>
+        <span class="chip">Registro publico cerrado</span>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <span class="panel-kicker">Estado comercial</span>
+      <div class="metric metric-highlight">
+        <span class="metric-label">Empresas activas</span>
+        <span class="metric-value">{{ empresas|selectattr('estado', 'equalto', STATUS_ACTIVE)|list|length }}</span>
+      </div>
+      <div class="metric-row">
+        <div class="metric compact">
+          <span class="metric-label">Suspendidas</span>
+          <span class="metric-value">{{ empresas|selectattr('estado', 'equalto', STATUS_SUSPENDED)|list|length }}</span>
+        </div>
+        <div class="metric compact">
+          <span class="metric-label">Canceladas</span>
+          <span class="metric-value">{{ empresas|selectattr('estado', 'equalto', STATUS_CANCELLED)|list|length }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block contenido %}
+<section class="section split-layout detail-split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Crear empresa</h3>
+    <p class="muted">Da de alta una nueva empresa con su admin principal y una contrasena temporal.</p>
+
+    <form method="POST" class="stack">
+      <div>
+        <label for="empresa">Empresa</label>
+        <input id="empresa" name="empresa" placeholder="Nombre de la empresa" required>
+      </div>
+
+      <div>
+        <label for="nombre">Admin principal</label>
+        <input id="nombre" name="nombre" placeholder="Nombre del administrador" required>
+      </div>
+
+      <div>
+        <label for="email">Correo admin</label>
+        <input id="email" name="email" type="email" placeholder="admin@empresa.com" required>
+      </div>
+
+      <div>
+        <label for="password">Contrasena temporal</label>
+        <input id="password" name="password" type="password" placeholder="Crea una contrasena temporal" required>
+      </div>
+
+      <div>
+        <label for="estado">Estado inicial</label>
+        <select id="estado" name="estado" required>
+          <option value="activa">Activa</option>
+          <option value="suspendida">Suspendida</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+
+      <div class="inline-actions">
+        <button type="submit">Crear empresa</button>
+      </div>
+    </form>
+  </article>
+
+  <aside class="info-panel fade-in delay-2">
+    <h3>Uso de estados</h3>
+    <div class="stack">
+      <article class="workflow-step compact-step">
+        <strong>Activa</strong>
+        <p>La empresa puede usar la plataforma con normalidad.</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Suspendida</strong>
+        <p>Bloquea temporalmente el acceso del cliente sin perder datos.</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Cancelada</strong>
+        <p>Cierra la relacion comercial y conserva la informacion como historico.</p>
+      </article>
+    </div>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Empresas registradas</h2>
+      <p>Consulta clientes, su estado actual, volumen de usuarios y cartera activa.</p>
+    </div>
+  </div>
+
+  {% if empresas %}
+  <div class="card-grid">
+    {% for empresa in empresas %}
+    <article class="list-card fade-in delay-1">
+      <div class="card-topline">
+        <span class="status-dot"></span>
+        <span>{{ empresa.estado|title }}</span>
+      </div>
+      <h3 class="card-title">{{ empresa.nombre }}</h3>
+      <p class="muted">Slug: {{ empresa.slug }}</p>
+      <div class="property-meta">
+        <span class="chip">{{ empresa.usuarios|length }} usuarios</span>
+        <span class="chip">{{ empresa.inmuebles|length }} inmuebles</span>
+      </div>
+
+      {% set admin_principal = empresa.usuarios|selectattr('rol', 'equalto', ROLE_ADMIN)|list|first %}
+      <p class="muted">
+        Admin principal: {{ admin_principal.nombre if admin_principal else 'Sin admin' }}
+      </p>
+
+      <form action="/superadmin/empresas/{{ empresa.id }}/estado" method="POST" class="stack user-role-form">
+        <div>
+          <label for="estado-{{ empresa.id }}">Cambiar estado</label>
+          <select id="estado-{{ empresa.id }}" name="estado">
+            <option value="activa" {% if empresa.estado == STATUS_ACTIVE %}selected{% endif %}>Activa</option>
+            <option value="suspendida" {% if empresa.estado == STATUS_SUSPENDED %}selected{% endif %}>Suspendida</option>
+            <option value="cancelada" {% if empresa.estado == STATUS_CANCELLED %}selected{% endif %}>Cancelada</option>
+          </select>
+        </div>
+        <div class="inline-actions">
+          <button type="submit">Guardar estado</button>
+        </div>
+      </form>
+
+      <form action="/superadmin/empresas/{{ empresa.id }}/entrar" method="POST" class="inline-form">
+        <button type="submit" class="button button-secondary">Entrar a empresa</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">No hay empresas registradas</h3>
+    <p>Crea la primera empresa para comenzar a vender y administrar clientes.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

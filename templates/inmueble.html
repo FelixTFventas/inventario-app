@@ -4,27 +4,35 @@
 
 {% block hero %}
 <section class="hero fade-in">
-  <div class="hero-grid">
+  <div class="hero-grid dashboard-hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">Detalle del inmueble</span>
+      <span class="eyebrow">Ficha del inmueble</span>
       <h2>{{ inmueble.direccion }}</h2>
       <p>
-        Propietario {{ inmueble.propietario }}. Usa esta vista para crear inventarios y revisar el historial de entregas del inmueble.
+        Gestiona el expediente del inmueble, crea nuevos inventarios y manten el historial de entregas listo para consulta operativa o comercial.
       </p>
-      <div class="chip-row">
-        <span class="chip">Recepción {{ inmueble.fecha_recepcion }}</span>
+      <div class="property-meta">
+        <span class="chip">Recepcion {{ inmueble.fecha_recepcion }}</span>
         <span class="chip">ID {{ inmueble.id }}</span>
+        <span class="chip">Propietario {{ inmueble.propietario }}</span>
+      </div>
+      <div class="hero-actions">
+        {% if can_edit %}
+        <a class="button" href="#crear-inventario">Crear inventario</a>
+        {% endif %}
+        <a class="button button-secondary" href="#inventarios-registrados">Ver historial</a>
       </div>
     </div>
 
     <div class="hero-panel fade-in delay-1">
-      <div class="metric">
+      <span class="panel-kicker">Estado del inmueble</span>
+      <div class="metric metric-highlight">
         <span class="metric-label">Inventarios del inmueble</span>
         <span class="metric-value">{{ inventarios|length }}</span>
       </div>
-      <div class="metric">
-        <span class="metric-label">Siguiente acción</span>
-        <span class="metric-value" style="font-size:1.4rem;">Crear o revisar</span>
+      <div class="metric compact metric-textual">
+        <span class="metric-label">Siguiente accion</span>
+        <span class="metric-note">Crea un nuevo recorrido o revisa inventarios anteriores.</span>
       </div>
     </div>
   </div>
@@ -32,20 +40,23 @@
 {% endblock %}
 
 {% block contenido %}
-<section class="section split-layout">
-  <article class="form-card fade-in delay-1">
+<section class="section split-layout detail-split-layout">
+  {% if can_edit %}
+  <article class="form-card fade-in delay-1" id="crear-inventario">
     <h3>Crear inventario</h3>
-    <p class="muted">Genera un nuevo checklist para entrega, revisión o seguimiento del inmueble.</p>
+    <p class="muted">Genera un nuevo checklist para entrega, revision o seguimiento del inmueble.</p>
 
     <form action="/crear_inventario/{{ inmueble.id }}" method="POST" class="stack">
-      <div>
+      <div class="field-grid">
+        <div>
         <label for="nombre">Nombre del inventario</label>
         <input id="nombre" type="text" name="nombre" placeholder="Ej. Entrega marzo 2026" required>
-      </div>
+        </div>
 
-      <div>
+        <div>
         <label for="fecha">Fecha</label>
         <input id="fecha" type="date" name="fecha" required>
+        </div>
       </div>
 
       <div class="inline-actions">
@@ -54,31 +65,37 @@
       </div>
     </form>
   </article>
+  {% else %}
+  <article class="form-card fade-in delay-1" id="crear-inventario">
+    <h3>Acceso de consulta</h3>
+    <p class="muted">Tu perfil puede revisar el historial de inventarios y la evidencia del inmueble, pero no crear nuevos registros.</p>
+  </article>
+  {% endif %}
 
   <aside class="info-panel fade-in delay-2">
-    <h3>Datos clave</h3>
+    <h3>Resumen del expediente</h3>
     <div class="stack">
-      <div>
-        <label>Dirección</label>
-        <div class="chip">{{ inmueble.direccion }}</div>
-      </div>
-      <div>
-        <label>Propietario</label>
-        <div class="chip">{{ inmueble.propietario }}</div>
-      </div>
-      <div>
-        <label>Fecha de recepción</label>
-        <div class="chip">{{ inmueble.fecha_recepcion }}</div>
-      </div>
+      <article class="workflow-step compact-step">
+        <strong>Direccion</strong>
+        <p>{{ inmueble.direccion }}</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Propietario</strong>
+        <p>{{ inmueble.propietario }}</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Fecha de recepcion</strong>
+        <p>{{ inmueble.fecha_recepcion }}</p>
+      </article>
     </div>
   </aside>
 </section>
 
-<section class="section">
+<section class="section" id="inventarios-registrados">
   <div class="section-heading fade-in">
     <div>
-      <h2>Inventarios del inmueble</h2>
-      <p>Selecciona un inventario para subir evidencia, observaciones y firmas.</p>
+      <h2>Historial de inventarios</h2>
+      <p>Entra a cada inventario para cargar evidencia, registrar observaciones y cerrar con firma digital.</p>
     </div>
   </div>
 
@@ -86,12 +103,16 @@
   <div class="card-grid">
     {% for inv in inventarios %}
     <article class="list-card fade-in delay-1">
-      <div class="chip-row">
-        <span class="chip">{{ inv.fecha }}</span>
-        <span class="chip">Token público activo</span>
+      <div class="card-topline">
+        <span class="status-dot"></span>
+        <span>Inventario disponible para gestion</span>
       </div>
       <h3 class="card-title">{{ inv.nombre }}</h3>
-      <p class="muted">Accede al inventario completo y administra sus secciones.</p>
+      <p class="muted">Accede al recorrido completo, administra secciones y prepara la version final para compartir.</p>
+      <div class="property-meta">
+        <span class="chip">{{ inv.fecha }}</span>
+        <span class="chip">Token publico activo</span>
+      </div>
       <div class="card-actions">
         <a class="button" href="/inventario/{{ inv.id }}">Entrar al inventario</a>
       </div>
@@ -101,7 +122,7 @@
   {% else %}
   <div class="empty-state fade-in">
     <h3 class="card-title">Sin inventarios todavía</h3>
-    <p>Crea el primer inventario de este inmueble para empezar el registro técnico.</p>
+    <p>Crea el primer inventario de este inmueble para iniciar el seguimiento tecnico y comercial.</p>
   </div>
   {% endif %}
 </section>

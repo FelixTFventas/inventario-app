@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios | Inventario App{% endblock %}
+
+{% block hero %}
+<section class="hero fade-in">
+  <div class="hero-grid dashboard-hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Administracion interna</span>
+      <h2>Usuarios de {{ current_company.nombre }}</h2>
+      <p>
+        Crea empleados de tu empresa y asignales acceso de edicion o consulta sin mezclar informacion con otras companias.
+      </p>
+      <div class="property-meta">
+        <span class="chip">{{ empleados|length }} usuarios</span>
+        <span class="chip">Administra editores y visores</span>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <span class="panel-kicker">Roles disponibles</span>
+      <div class="metric metric-highlight">
+        <span class="metric-label">Admins de empresa</span>
+        <span class="metric-value">{{ empleados|selectattr('rol', 'equalto', ROLE_ADMIN)|list|length }}</span>
+      </div>
+      <div class="metric-row">
+        <div class="metric compact">
+          <span class="metric-label">Editores</span>
+          <span class="metric-value">{{ empleados|selectattr('rol', 'equalto', ROLE_EDITOR)|list|length }}</span>
+        </div>
+        <div class="metric compact">
+          <span class="metric-label">Visores</span>
+          <span class="metric-value">{{ empleados|selectattr('rol', 'equalto', ROLE_VIEWER)|list|length }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block contenido %}
+<section class="section split-layout detail-split-layout">
+  <article class="form-card fade-in delay-1">
+    <h3>Crear empleado</h3>
+    <p class="muted">Agrega usuarios para esta empresa con permisos de edicion o solo consulta.</p>
+
+    <form method="POST" class="stack">
+      <div>
+        <label for="nombre">Nombre</label>
+        <input id="nombre" name="nombre" placeholder="Nombre del empleado" required>
+      </div>
+
+      <div>
+        <label for="email">Correo</label>
+        <input id="email" type="email" name="email" placeholder="empleado@empresa.com" required>
+      </div>
+
+      <div>
+        <label for="password">Contrasena temporal</label>
+        <input id="password" type="password" name="password" placeholder="Crea una contrasena temporal" required>
+      </div>
+
+      <div>
+        <label for="rol">Rol</label>
+        <select id="rol" name="rol" required>
+          <option value="editor">Editor</option>
+          <option value="visor">Visor</option>
+        </select>
+      </div>
+
+      <div class="inline-actions">
+        <button type="submit">Crear usuario</button>
+      </div>
+    </form>
+  </article>
+
+  <aside class="info-panel fade-in delay-2">
+    <h3>Permisos</h3>
+    <div class="stack">
+      <article class="workflow-step compact-step">
+        <strong>Admin de empresa</strong>
+        <p>Gestiona la operacion completa y puede crear empleados de su empresa.</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Editor</strong>
+        <p>Puede crear y modificar inmuebles, inventarios, secciones, evidencia y firmas.</p>
+      </article>
+      <article class="workflow-step compact-step">
+        <strong>Visor</strong>
+        <p>Solo puede consultar la informacion, sin crear ni modificar contenido.</p>
+      </article>
+    </div>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Equipo registrado</h2>
+      <p>Usuarios activos de {{ current_company.nombre }} dentro de la plataforma.</p>
+    </div>
+  </div>
+
+  {% if empleados %}
+  <div class="card-grid">
+    {% for empleado in empleados %}
+    <article class="list-card fade-in delay-1">
+      <div class="card-topline">
+        <span class="status-dot"></span>
+        <span>{{ 'Cuenta principal' if empleado.rol == ROLE_ADMIN else 'Empleado de la empresa' }}</span>
+      </div>
+      <h3 class="card-title">{{ empleado.nombre }}</h3>
+      <p class="muted">{{ empleado.email }}</p>
+      <div class="property-meta">
+        <span class="chip">{{ empleado.rol|replace('_', ' ')|title }}</span>
+        <span class="chip">{{ 'Activo' if empleado.activo else 'Inactivo' }}</span>
+        {% if empleado.id == current_user.id %}
+        <span class="chip">Tu sesion</span>
+        {% endif %}
+      </div>
+
+      {% if empleado.rol != ROLE_ADMIN and empleado.id != current_user.id %}
+      <form action="/usuarios/{{ empleado.id }}/rol" method="POST" class="stack user-role-form">
+        <div>
+          <label for="rol-{{ empleado.id }}">Cambiar rol</label>
+          <select id="rol-{{ empleado.id }}" name="rol">
+            <option value="editor" {% if empleado.rol == ROLE_EDITOR %}selected{% endif %}>Editor</option>
+            <option value="visor" {% if empleado.rol == ROLE_VIEWER %}selected{% endif %}>Visor</option>
+          </select>
+        </div>
+        <div class="inline-actions">
+          <button type="submit">Guardar rol</button>
+        </div>
+      </form>
+
+      <form action="/usuarios/{{ empleado.id }}/password" method="POST" class="stack user-role-form">
+        <div>
+          <label for="password-{{ empleado.id }}">Restablecer contrasena</label>
+          <input id="password-{{ empleado.id }}" type="password" name="password" placeholder="Nueva contrasena temporal" minlength="6" required>
+        </div>
+        <div class="inline-actions">
+          <button type="submit">Guardar contrasena</button>
+        </div>
+      </form>
+      {% elif empleado.rol == ROLE_ADMIN %}
+      <p class="muted">La cuenta principal conserva su rol de administracion.</p>
+      {% endif %}
+
+      {% if empleado.rol != ROLE_ADMIN and empleado.id != current_user.id %}
+      <form action="/usuarios/{{ empleado.id }}/estado" method="POST" class="inline-form">
+        <button type="submit" class="button {% if empleado.activo %}button-danger{% else %}button-secondary{% endif %}">
+          {{ 'Desactivar usuario' if empleado.activo else 'Activar usuario' }}
+        </button>
+      </form>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state fade-in">
+    <h3 class="card-title">No hay usuarios registrados</h3>
+    <p>Crea el primer empleado para empezar a distribuir permisos dentro de tu empresa.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

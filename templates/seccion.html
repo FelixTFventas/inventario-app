@@ -8,27 +8,35 @@
 
 {% block hero %}
 <section class="hero fade-in">
-  <div class="hero-grid">
+  <div class="hero-grid dashboard-hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">Sección del inventario</span>
+      <span class="eyebrow">Seccion del inventario</span>
       <h2>{{ seccion.nombre }}</h2>
       <p>
-        Carga fotos o video, documenta observaciones y mantén evidencia ordenada por ambiente.
+        Carga fotos o video, documenta observaciones y manten la evidencia ordenada por ambiente para el cierre del recorrido.
       </p>
-      <div class="chip-row">
+      <div class="property-meta">
         <span class="chip">{{ fotos|length }} archivos</span>
         <span class="chip">{{ observaciones|length }} observaciones</span>
+        <span class="chip">ID {{ seccion.id }}</span>
+      </div>
+      <div class="hero-actions">
+        {% if can_edit %}
+        <a class="button" href="#subir-archivos">Subir evidencia</a>
+        {% endif %}
+        <a class="button button-secondary" href="#observaciones">Ver observaciones</a>
       </div>
     </div>
 
     <div class="hero-panel fade-in delay-1">
-      <div class="metric">
-        <span class="metric-label">Estado de la sección</span>
-        <span class="metric-value" style="font-size:1.35rem;">En revisión</span>
+      <span class="panel-kicker">Control de seccion</span>
+      <div class="metric metric-highlight">
+        <span class="metric-label">Archivos cargados</span>
+        <span class="metric-value">{{ fotos|length }}</span>
       </div>
-      <div class="metric">
-        <span class="metric-label">Acceso rápido</span>
-        <span class="metric-value">{{ seccion.id }}</span>
+      <div class="metric compact metric-textual">
+        <span class="metric-label">Estado</span>
+        <span class="metric-note">Lista para inspeccion, comentarios y actualizacion visual.</span>
       </div>
     </div>
   </div>
@@ -36,10 +44,11 @@
 {% endblock %}
 
 {% block contenido %}
-<section class="section split-layout">
-  <article class="upload-panel fade-in delay-1">
+<section class="section split-layout detail-split-layout">
+  {% if can_edit %}
+  <article class="upload-panel fade-in delay-1" id="subir-archivos">
     <h3>Subir fotos o videos</h3>
-    <p class="muted">Selecciona varios archivos desde computador o captura rápida en móvil.</p>
+    <p class="muted">Selecciona varios archivos desde computador o captura rapida en movil para documentar el estado del ambiente.</p>
 
     <form action="/subir_foto/{{ seccion.id }}" method="POST" enctype="multipart/form-data" class="stack">
       <div>
@@ -53,11 +62,14 @@
   </article>
 
   <aside class="info-panel fade-in delay-2">
-    <h3>Navegación</h3>
+    <h3>Navegacion</h3>
     <div class="stack">
       <a class="button button-secondary" href="/inventario/{{ inventario_id }}">Volver al inventario</a>
       <a class="button button-secondary" href="/">Ir al dashboard</a>
-      <p class="muted">Cada archivo queda disponible para revisión rápida y visualización ampliada.</p>
+      <article class="workflow-step compact-step">
+        <strong>Tip rapido</strong>
+        <p>Cada archivo queda disponible para revision rapida y visualizacion ampliada.</p>
+      </article>
     </div>
   </aside>
 </section>
@@ -66,7 +78,7 @@
   <div class="section-heading fade-in">
     <div>
       <h2>Galería</h2>
-      <p>Explora la evidencia de esta sección con un grid más legible.</p>
+      <p>Explora la evidencia de esta seccion con una galeria mas clara y facil de revisar.</p>
     </div>
   </div>
 
@@ -84,13 +96,14 @@
       </a>
       {% endif %}
       <div class="media-meta">
-        <span class="chip">{{ foto.archivo }}</span>
-        
-        <form action="/eliminar_foto/{{ foto.id }}" method="POST" style="margin-top: 8px;">
-          <button class="button-danger" onclick="return confirm('¿Eliminar este archivo?')">
+        <span class="chip media-chip">{{ foto.archivo }}</span>
+        {% if can_edit %}
+        <form action="/eliminar_foto/{{ foto.id }}" method="POST" class="inline-form media-form">
+          <button type="submit" class="button button-danger" onclick="return confirm('¿Eliminar este archivo?')">
             Eliminar
           </button>
-       </form>
+        </form>
+        {% endif %}
       </div>
     </article>
     {% endfor %}
@@ -103,24 +116,37 @@
   {% endif %}
 </section>
 
-<section class="section split-layout">
+<section class="section split-layout detail-split-layout" id="observaciones">
+  {% if can_edit %}
   <article class="form-card fade-in delay-1">
     <h3>Agregar observación</h3>
     <form action="/crear_observacion/{{ seccion.id }}" method="POST" class="stack">
       <div>
         <label for="comentario">Comentario</label>
-        <textarea id="comentario" name="comentario" placeholder="Ej. Se evidencia desgaste en pintura o pendiente de reparación"></textarea>
+        <textarea id="comentario" name="comentario" placeholder="Ej. Se evidencia desgaste en pintura o pendiente de reparacion"></textarea>
       </div>
       <div class="inline-actions">
         <button type="submit">Guardar observación</button>
       </div>
     </form>
   </article>
+  {% else %}
+  <article class="form-card fade-in delay-1">
+    <h3>Observaciones</h3>
+    <p class="muted">Puedes revisar las observaciones registradas por tu equipo, pero no crear nuevas desde un perfil de solo lectura.</p>
+  </article>
+  {% endif %}
+  {% else %}
+  <article class="upload-panel fade-in delay-1" id="subir-archivos">
+    <h3>Consulta de evidencia</h3>
+    <p class="muted">Tu perfil puede revisar archivos y observaciones, pero no subir nuevo contenido.</p>
+  </article>
+  {% endif %}
 
   <aside class="surface-card fade-in delay-2">
     <h3>Observaciones registradas</h3>
     {% if observaciones %}
-    <div class="stack">
+    <div class="stack observation-stack">
       {% for o in observaciones %}
       <article class="observation-card">
         <p>{{ o.comentario }}</p>

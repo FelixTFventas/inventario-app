@@ -4,16 +4,17 @@
 
 {% block hero %}
 <section class="hero fade-in">
-  <div class="hero-grid">
+  <div class="hero-grid dashboard-hero-grid">
     <div class="hero-copy">
       <span class="eyebrow">Inventario activo</span>
       <h2>{{ inventario.nombre }}</h2>
       <p>
-        Organiza secciones, genera el PDF final y captura firma digital sin salir de esta vista.
+        Organiza el recorrido del inmueble, controla cada seccion y deja el inventario listo para compartir en PDF o link publico.
       </p>
-      <div class="chip-row">
+      <div class="property-meta">
         <span class="chip">Fecha {{ inventario.fecha }}</span>
         <span class="chip">{{ secciones|length }} secciones</span>
+        <span class="chip">ID {{ inventario.id }}</span>
       </div>
       <div class="hero-actions">
         <a class="button" href="/publico/{{ inventario.token }}" target="_blank">Ver link público</a>
@@ -22,13 +23,14 @@
     </div>
 
     <div class="hero-panel fade-in delay-1">
-      <div class="metric">
-        <span class="metric-label">Inventario compartible</span>
-        <span class="metric-value" style="font-size:1.4rem;">Token activo</span>
+      <span class="panel-kicker">Control del inventario</span>
+      <div class="metric metric-highlight">
+        <span class="metric-label">Secciones registradas</span>
+        <span class="metric-value">{{ secciones|length }}</span>
       </div>
-      <div class="metric">
-        <span class="metric-label">Acceso rápido</span>
-        <span class="metric-value">{{ inventario.id }}</span>
+      <div class="metric compact metric-textual">
+        <span class="metric-label">Estado</span>
+        <span class="metric-note">Token activo, firma disponible y salida lista a PDF.</span>
       </div>
     </div>
   </div>
@@ -36,15 +38,16 @@
 {% endblock %}
 
 {% block contenido %}
-<section class="section split-layout">
+<section class="section split-layout detail-split-layout">
+  {% if can_edit %}
   <article class="form-card fade-in delay-1">
     <h3>Crear nueva sección</h3>
-    <p class="muted">Añade zonas adicionales cuando el inmueble requiera un detalle más fino.</p>
+    <p class="muted">Anade zonas adicionales cuando el inmueble requiera un detalle mas fino o un recorrido mas preciso.</p>
 
     <form action="/crear_seccion/{{ inventario.id }}" method="POST" class="stack">
       <div>
         <label for="nombre-seccion">Nombre de la sección</label>
-        <input id="nombre-seccion" type="text" name="nombre" placeholder="Ej. Balcón principal" required>
+        <input id="nombre-seccion" type="text" name="nombre" placeholder="Ej. Balcon principal" required>
       </div>
       <div class="inline-actions">
         <button type="submit">Crear sección</button>
@@ -52,13 +55,22 @@
       </div>
     </form>
   </article>
+  {% else %}
+  <article class="form-card fade-in delay-1">
+    <h3>Consulta del inventario</h3>
+    <p class="muted">Tu perfil puede revisar secciones, firma y documento final, pero no crear nuevas secciones ni modificar contenido.</p>
+  </article>
+  {% endif %}
 
   <aside class="info-panel fade-in delay-2">
-    <h3>Herramientas rápidas</h3>
+    <h3>Acciones clave</h3>
     <div class="stack">
       <a class="button" href="/publico/{{ inventario.token }}" target="_blank">Abrir vista pública</a>
       <a class="button button-secondary" href="/inventario_pdf/{{ inventario.id }}">Descargar PDF</a>
-      <p class="muted">Comparte el enlace público con clientes o equipo operativo sin exponer el panel administrativo.</p>
+      <article class="workflow-step compact-step">
+        <strong>Uso recomendado</strong>
+        <p>Comparte el enlace publico con clientes o equipo operativo sin exponer el panel administrativo.</p>
+      </article>
     </div>
   </aside>
 </section>
@@ -66,8 +78,8 @@
 <section class="section">
   <div class="section-heading fade-in">
     <div>
-      <h2>Secciones del inventario</h2>
-      <p>Administra cada ambiente y entra a su galería de archivos y observaciones.</p>
+      <h2>Secciones del recorrido</h2>
+      <p>Administra cada ambiente y entra a su galeria de archivos, observaciones y evidencia de soporte.</p>
     </div>
   </div>
 
@@ -75,15 +87,20 @@
   <div class="card-grid">
     {% for s in secciones %}
     <article class="list-card fade-in delay-1">
-      <div class="chip-row">
-        <span class="chip">Sección {{ loop.index }}</span>
+      <div class="card-topline">
+        <span class="status-dot"></span>
+        <span>Seccion {{ loop.index }}</span>
       </div>
       <h3 class="card-title">{{ s.nombre }}</h3>
-      <p class="muted">Actualiza evidencia, observaciones o nombre de la sección.</p>
+      <p class="muted">Actualiza evidencia, observaciones y el nombre de la seccion desde una sola vista.</p>
       <div class="card-actions">
         <a class="button" href="/seccion/{{ s.id }}">Entrar</a>
+        {% if can_edit %}
         <a class="button button-secondary" href="/editar_seccion/{{ s.id }}">Editar</a>
-        <a class="button button-danger" href="/eliminar_seccion/{{ s.id }}">Eliminar</a>
+        <form action="/eliminar_seccion/{{ s.id }}" method="POST" class="inline-form">
+          <button type="submit" class="button button-danger" onclick="return confirm('¿Eliminar esta seccion?')">Eliminar</button>
+        </form>
+        {% endif %}
       </div>
     </article>
     {% endfor %}
@@ -100,10 +117,11 @@
   <div class="section-heading">
     <div>
       <h2>Firma del inventario</h2>
-      <p>Recoge una firma simple y guárdala junto al documento final.</p>
+      <p>Recoge una firma simple y guardala junto al documento final para cerrar el recorrido.</p>
     </div>
   </div>
 
+  {% if can_edit %}
   <form action="/guardar_firma/{{ inventario.id }}" method="POST" class="stack" onsubmit="guardarFirma()">
     <div>
       <label for="firma-nombre">Nombre de quien firma</label>
@@ -121,6 +139,11 @@
       <button type="button" class="button button-secondary" onclick="limpiar()">Limpiar</button>
     </div>
   </form>
+  {% else %}
+  <div class="empty-state">
+    <p>La firma solo puede registrarse desde perfiles con permiso de edicion.</p>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}
 

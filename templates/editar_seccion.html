@@ -4,11 +4,23 @@
 
 {% block hero %}
 <section class="hero fade-in">
-  <div class="hero-grid">
+  <div class="hero-grid dashboard-hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">Ajuste rápido</span>
+      <span class="eyebrow">Ajuste rapido</span>
       <h2>Editar sección</h2>
-      <p>Renombra la sección para mantener el inventario organizado y consistente.</p>
+      <p>Renombra la seccion para mantener el recorrido organizado, consistente y facil de compartir.</p>
+      <div class="property-meta">
+        <span class="chip">ID seccion {{ seccion.id }}</span>
+        <span class="chip">Inventario {{ seccion.inventario_id }}</span>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-in delay-1">
+      <span class="panel-kicker">Actualizacion</span>
+      <div class="metric compact metric-textual">
+        <span class="metric-label">Objetivo</span>
+        <span class="metric-note">Usa un nombre claro para que la seccion sea facil de identificar en el PDF y en la vista publica.</span>
+      </div>
     </div>
   </div>
 </section>
@@ -16,6 +28,7 @@
 
 {% block contenido %}
 <section class="section split-layout">
+  {% if can_edit %}
   <article class="form-card fade-in delay-1">
     <h3>Nombre visible</h3>
     <form method="POST" class="stack">
@@ -30,13 +43,22 @@
       </div>
     </form>
   </article>
+  {% else %}
+  <article class="form-card fade-in delay-1">
+    <h3>Solo lectura</h3>
+    <p class="muted">Tu perfil puede consultar esta seccion, pero no cambiar su nombre.</p>
+  </article>
+  {% endif %}
 
   <aside class="info-panel fade-in delay-2">
     <h3>Contexto</h3>
     <div class="stack">
       <span class="chip">ID sección {{ seccion.id }}</span>
       <span class="chip">Inventario {{ seccion.inventario_id }}</span>
-      <p class="muted">Usa nombres específicos para facilitar búsquedas y el armado del PDF.</p>
+      <article class="workflow-step compact-step">
+        <strong>Buena practica</strong>
+        <p>Usa nombres especificos para facilitar busquedas, orden y armado del PDF.</p>
+      </article>
     </div>
   </aside>
 </section>

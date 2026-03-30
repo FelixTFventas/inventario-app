@@ -6,7 +6,7 @@
   <title>Login | Inventario App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -14,21 +14,34 @@
     <section class="auth-panel fade-in">
       <div class="auth-feature">
         <span class="eyebrow">Panel administrativo</span>
-        <h1>Ingresa y gestiona inventarios con mejor claridad visual.</h1>
+        <h1>Opera tus inventarios como una plataforma lista para cliente.</h1>
         <p class="auth-subtitle">
-          Registra evidencia, organiza secciones y comparte inventarios públicos con una experiencia más cuidada.
+          Centraliza inmuebles, evidencia, observaciones y firmas en una interfaz mas clara para equipos comerciales y operativos.
         </p>
         <ul>
-          <li>Dashboard con métricas principales.</li>
-          <li>Galerías y observaciones por sección.</li>
-          <li>Firma digital y exportación a PDF.</li>
+          <li>Dashboard con inventario, inmuebles y evidencia.</li>
+          <li>Seguimiento por inmueble con recorrido visual.</li>
+          <li>Firma digital, PDF y vista publica para compartir.</li>
         </ul>
       </div>
 
       <div class="auth-form">
         <span class="eyebrow">Acceso</span>
-        <h1>Login</h1>
-        <p class="auth-subtitle">Usa tu correo y contraseña para entrar al panel.</p>
+        <h1>Bienvenido de nuevo</h1>
+        <p class="auth-subtitle">Usa tu correo y contrasena para entrar al centro de operaciones.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="flash-stack">
+          {% for category, message in messages %}
+          <article class="flash flash-{{ category if category in ['success', 'error'] else 'info' }}">
+            <strong>{{ 'Listo' if category == 'success' else 'Atención' if category == 'error' else 'Aviso' }}</strong>
+            <span>{{ message }}</span>
+          </article>
+          {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
 
         <form method="POST" class="stack">
           <div>
@@ -43,7 +56,7 @@
 
           <div class="auth-actions">
             <button type="submit">Ingresar</button>
-            <a class="button button-secondary" href="/registro">Crear cuenta</a>
+            <a class="button button-secondary" href="/login">Acceso gestionado por admin</a>
           </div>
         </form>
       </div>

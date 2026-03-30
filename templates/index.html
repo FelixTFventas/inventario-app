@@ -4,32 +4,52 @@
 
 {% block hero %}
 <section class="hero fade-in">
-  <div class="hero-grid">
+  <div class="hero-grid dashboard-hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">Centro de control</span>
-      <h1>Gestiona inventarios de inmuebles con una vista clara y elegante.</h1>
+      <span class="eyebrow">Panel operativo</span>
+      <h1>Centraliza entregas, evidencia y firmas en una sola plataforma.</h1>
       <p>
-        Crea propiedades, revisa evidencia capturada y mantén cada entrega documentada en un mismo flujo.
+        Administra inmuebles con una experiencia mas clara, rapida y comercial para equipos que necesitan documentar cada entrega sin friccion.
       </p>
       <div class="hero-actions">
-        <a class="button" href="#crear-inmueble">Nuevo inmueble</a>
-        <a class="button button-secondary" href="#lista-inmuebles">Ver inmuebles</a>
+        {% if can_edit %}
+        <a class="button" href="#crear-inmueble">Registrar inmueble</a>
+        {% endif %}
+        <a class="button button-secondary" href="#lista-inmuebles">Explorar inventario</a>
+      </div>
+      <div class="hero-mini-stats">
+        <div>
+          <strong>{{ total_inmuebles }}</strong>
+          <span>propiedades activas</span>
+        </div>
+        <div>
+          <strong>{{ total_inventarios }}</strong>
+          <span>inventarios creados</span>
+        </div>
+        <div>
+          <strong>{{ total_fotos }}</strong>
+          <span>archivos de soporte</span>
+        </div>
       </div>
     </div>
 
     <div class="hero-panel fade-in delay-1">
-      <div class="metric">
-        <span class="metric-label">Inventarios con respaldo visual</span>
+      <span class="panel-kicker">Resumen ejecutivo</span>
+      <div class="metric metric-highlight">
+        <span class="metric-label">Inventarios documentados</span>
         <span class="metric-value">{{ total_inventarios }}</span>
       </div>
-      <div class="metric">
-        <span class="metric-label">Propiedades registradas</span>
-        <span class="metric-value">{{ total_inmuebles }}</span>
+      <div class="metric-row">
+        <div class="metric compact">
+          <span class="metric-label">Inmuebles activos</span>
+          <span class="metric-value">{{ total_inmuebles }}</span>
+        </div>
+        <div class="metric compact">
+          <span class="metric-label">Evidencia multimedia</span>
+          <span class="metric-value">{{ total_fotos }}</span>
+        </div>
       </div>
-      <div class="metric">
-        <span class="metric-label">Fotos y videos almacenados</span>
-        <span class="metric-value">{{ total_fotos }}</span>
-      </div>
+      <p class="panel-note">Tu operacion queda lista para registrar, revisar y compartir evidencia desde movil o escritorio.</p>
     </div>
   </div>
 </section>
@@ -39,14 +59,17 @@
 <section class="section fade-in delay-1">
   <div class="stats-grid">
     <article class="stat-card">
+      <span class="stat-kicker">Inventario</span>
       <strong>{{ total_inmuebles }}</strong>
       <span>Inmuebles activos</span>
     </article>
     <article class="stat-card">
+      <span class="stat-kicker">Operación</span>
       <strong>{{ total_inventarios }}</strong>
       <span>Inventarios documentados</span>
     </article>
     <article class="stat-card">
+      <span class="stat-kicker">Soporte visual</span>
       <strong>{{ total_fotos }}</strong>
       <span>Archivos multimedia</span>
     </article>
@@ -54,11 +77,12 @@
 </section>
 
 <section class="section split-layout">
+  {% if can_edit %}
   <article class="form-card fade-in delay-2" id="crear-inmueble">
     <div class="section-heading">
       <div>
         <h2>Crear inmueble</h2>
-        <p>Registra una propiedad nueva con los datos base de recepción.</p>
+        <p>Registra una propiedad nueva con los datos esenciales de recepcion.</p>
       </div>
     </div>
 
@@ -83,24 +107,34 @@
       </div>
     </form>
   </article>
+  {% else %}
+  <article class="form-card fade-in delay-2">
+    <div class="section-heading">
+      <div>
+        <h2>Acceso de consulta</h2>
+        <p>Tu perfil es de solo lectura. Puedes revisar inmuebles, inventarios, evidencia y documentos de tu empresa.</p>
+      </div>
+    </div>
+  </article>
+  {% endif %}
 
   <aside class="info-panel fade-in delay-3">
     <h3>Flujo recomendado</h3>
     <div class="stack">
-      <div>
-        <div class="chip-row">
-          <span class="chip">1. Registrar inmueble</span>
-          <span class="chip">2. Crear inventario</span>
-        </div>
-      </div>
-      <div>
-        <div class="chip-row">
-          <span class="chip">3. Cargar evidencia</span>
-          <span class="chip">4. Firmar y compartir</span>
-        </div>
-      </div>
+      <article class="workflow-step">
+        <strong>1. Alta del inmueble</strong>
+        <p>Registra direccion, propietario y fecha para abrir el expediente.</p>
+      </article>
+      <article class="workflow-step">
+        <strong>2. Inventario operativo</strong>
+        <p>Crea el checklist y agrega secciones segun el recorrido real.</p>
+      </article>
+      <article class="workflow-step">
+        <strong>3. Evidencia y cierre</strong>
+        <p>Sube fotos, deja observaciones, firma y comparte el resultado final.</p>
+      </article>
       <p class="muted">
-        El panel ahora prioriza lectura rápida en escritorio y uso táctil en móvil para inspecciones en sitio.
+        El panel esta pensado para verse profesional frente a cliente y agilizar el trabajo de campo.
       </p>
     </div>
   </aside>
@@ -109,21 +143,52 @@
 <section class="section" id="lista-inmuebles">
   <div class="section-heading fade-in">
     <div>
-      <h2>Lista de inmuebles</h2>
-      <p>Accede al detalle de cada propiedad y entra a sus inventarios.</p>
+      <h2>Inventario de inmuebles</h2>
+      <p>Consulta rapidamente el estado de cada propiedad y entra a sus inventarios desde una vista mas ejecutiva.</p>
     </div>
   </div>
+
+  <section class="search-panel fade-in delay-1">
+    <form method="GET" action="/" class="search-form">
+      <div class="search-field">
+        <label for="q">Buscar inventario</label>
+        <input
+          id="q"
+          type="text"
+          name="q"
+          value="{{ search_query or '' }}"
+          placeholder="Busca por direccion o propietario"
+        >
+      </div>
+      <div class="search-actions">
+        <button type="submit">Buscar</button>
+        {% if search_query %}
+        <a class="button button-secondary" href="/#lista-inmuebles">Limpiar</a>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if search_query %}
+    <p class="search-summary">
+      Mostrando {{ inmuebles|length }} resultado(s) para "{{ search_query }}".
+    </p>
+    {% endif %}
+  </section>
 
   {% if inmuebles %}
   <div class="card-grid">
     {% for inmueble in inmuebles %}
     <article class="content-card fade-in delay-1">
-      <div class="chip-row">
-        <span class="chip">ID {{ inmueble.id }}</span>
-        <span class="chip">Recepción {{ inmueble.fecha_recepcion }}</span>
+      <div class="card-topline">
+        <span class="status-dot"></span>
+        <span>Expediente activo</span>
       </div>
       <h3 class="card-title">{{ inmueble.direccion }}</h3>
       <p class="muted">Propietario: {{ inmueble.propietario }}</p>
+      <div class="property-meta">
+        <span class="chip">ID {{ inmueble.id }}</span>
+        <span class="chip">Recepción {{ inmueble.fecha_recepcion }}</span>
+      </div>
       <div class="card-actions">
         <a class="button" href="/inmueble/{{ inmueble.id }}">Ver inmueble</a>
       </div>
@@ -132,8 +197,14 @@
   </div>
   {% else %}
   <div class="empty-state fade-in">
-    <h3 class="card-title">Aun no hay inmuebles</h3>
-    <p>Crea el primero desde el formulario para empezar a documentar entregas.</p>
+    <h3 class="card-title">{% if search_query %}No encontramos coincidencias{% else %}Aun no hay inmuebles{% endif %}</h3>
+    <p>
+      {% if search_query %}
+      Prueba con otra direccion o nombre de propietario para localizar el inventario.
+      {% else %}
+      Registra el primero para activar tu inventario y empezar a documentar entregas con evidencia.
+      {% endif %}
+    </p>
   </div>
   {% endif %}
 </section>

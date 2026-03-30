@@ -4,28 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#b85c38">
+  <meta name="theme-color" content="#153385">
   <title>{% block title %}Inventario App{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
   {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body class="app-shell">
   <header class="topbar fade-in">
     <div class="topbar-shell">
       <a class="brand brand-link" href="/">
         <div class="brand-mark">IF</div>
         <div class="brand-copy">
-          <h1>Inventario Felix</h1>
-          <p>Control visual y trazabilidad.</p>
+          <h1>
+            {% if is_superadmin and not current_company %}
+            Panel Superadmin
+            {% else %}
+            {{ current_company.nombre if current_company else 'Inventario App' }}
+            {% endif %}
+          </h1>
+          <p>
+            {% if is_superadmin and not current_company %}
+            Gestion global de empresas.
+            {% elif current_user.is_authenticated %}
+            {{ current_user.rol|replace('_', ' ')|title }}
+            {% else %}
+            Control visual de inmuebles.
+            {% endif %}
+          </p>
         </div>
       </a>
 
       <nav class="topnav">
+        {% if is_superadmin %}
+        <a class="topnav-link {% if request.path == '/superadmin/empresas' %}is-active{% endif %}" href="/superadmin/empresas">Empresas</a>
+        {% if current_company %}
+        <a class="topnav-link {% if request.path == '/' %}is-active{% endif %}" href="/">Empresa activa</a>
+        <form action="/superadmin/salir-empresa" method="POST" class="inline-form">
+          <button type="submit" class="topnav-link topnav-button">Salir empresa</button>
+        </form>
+        {% endif %}
+        {% else %}
         <a class="topnav-link {% if request.path == '/' %}is-active{% endif %}" href="/">Dashboard</a>
-        <a class="topnav-link" href="/">Inmuebles</a>
+        <a class="topnav-link" href="/#lista-inmuebles">Inmuebles</a>
+        {% if is_company_admin %}
+        <a class="topnav-link {% if request.path == '/usuarios' %}is-active{% endif %}" href="/usuarios">Usuarios</a>
+        {% endif %}
+        {% endif %}
         {% if current_user.is_authenticated %}
         <a class="topnav-link" href="/logout">Cerrar sesión</a>
         {% else %}
@@ -37,6 +64,28 @@
 
   <div class="layout">
     <main class="main main-full">
+      {% if superadmin_company_mode and current_company %}
+      <section class="flash-stack fade-in">
+        <article class="flash flash-info">
+          <strong>Modo superadmin</strong>
+          <span>Estas viendo y editando la empresa {{ current_company.nombre }}.</span>
+        </article>
+      </section>
+      {% endif %}
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="flash-stack fade-in">
+        {% for category, message in messages %}
+        <article class="flash flash-{{ category if category in ['success', 'error'] else 'info' }}">
+          <strong>{{ 'Listo' if category == 'success' else 'Atención' if category == 'error' else 'Aviso' }}</strong>
+          <span>{{ message }}</span>
+        </article>
+        {% endfor %}
+      </section>
+      {% endif %}
+      {% endwith %}
+
       {% block hero %}{% endblock %}
 
       {% block contenido %}{% endblock %}

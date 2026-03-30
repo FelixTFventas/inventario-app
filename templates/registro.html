@@ -6,7 +6,7 @@
   <title>Registro | Inventario App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -14,23 +14,41 @@
     <section class="auth-panel fade-in">
       <div class="auth-feature">
         <span class="eyebrow">Nuevo acceso</span>
-        <h1>Crea una cuenta para administrar propiedades e inventarios.</h1>
+        <h1>Crea una cuenta para gestionar tu operacion inmobiliaria.</h1>
         <p class="auth-subtitle">
-          El flujo está pensado para equipos inmobiliarios que documentan entregas con evidencia visual y firmas.
+          El flujo esta pensado para equipos que necesitan documentar entregas, recorridos e incidencias con evidencia clara.
         </p>
         <ul>
-          <li>Registro centralizado por inmueble.</li>
-          <li>Secciones editables para inspección detallada.</li>
-          <li>Vista pública lista para compartir.</li>
+          <li>Registro centralizado por inmueble y fecha.</li>
+          <li>Secciones editables para inspeccion detallada.</li>
+          <li>Vista publica lista para compartir con cliente.</li>
         </ul>
       </div>
 
       <div class="auth-form">
         <span class="eyebrow">Registro</span>
         <h1>Crear cuenta</h1>
-        <p class="auth-subtitle">Completa tus datos básicos para habilitar el panel.</p>
+        <p class="auth-subtitle">Completa tus datos basicos para activar el panel comercial y operativo.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="flash-stack">
+          {% for category, message in messages %}
+          <article class="flash flash-{{ category if category in ['success', 'error'] else 'info' }}">
+            <strong>{{ 'Listo' if category == 'success' else 'Atención' if category == 'error' else 'Aviso' }}</strong>
+            <span>{{ message }}</span>
+          </article>
+          {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
 
         <form method="POST" class="stack">
+          <div>
+            <label for="empresa">Empresa</label>
+            <input id="empresa" name="empresa" placeholder="Nombre de la empresa" required>
+          </div>
+
           <div>
             <label for="nombre">Nombre</label>
             <input id="nombre" name="nombre" placeholder="Nombre completo" required>
