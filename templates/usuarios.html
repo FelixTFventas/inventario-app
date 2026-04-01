@@ -45,19 +45,20 @@
     <p class="muted">Agrega usuarios para esta empresa con permisos de edicion o solo consulta.</p>
 
     <form method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div>
         <label for="nombre">Nombre</label>
-        <input id="nombre" name="nombre" placeholder="Nombre del empleado" required>
+        <input id="nombre" name="nombre" autocomplete="name" placeholder="Ej. Carlos Ramírez…" required>
       </div>
 
       <div>
         <label for="email">Correo</label>
-        <input id="email" type="email" name="email" placeholder="empleado@empresa.com" required>
+        <input id="email" type="email" name="email" inputmode="email" autocomplete="email" spellcheck="false" placeholder="Ej. empleado@empresa.com…" required>
       </div>
 
       <div>
         <label for="password">Contrasena temporal</label>
-        <input id="password" type="password" name="password" placeholder="Crea una contrasena temporal" required>
+        <input id="password" type="password" name="password" autocomplete="new-password" placeholder="Crea una contrasena temporal…" required>
       </div>
 
       <div>
@@ -121,6 +122,7 @@
 
       {% if empleado.rol != ROLE_ADMIN and empleado.id != current_user.id %}
       <form action="/usuarios/{{ empleado.id }}/rol" method="POST" class="stack user-role-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
           <label for="rol-{{ empleado.id }}">Cambiar rol</label>
           <select id="rol-{{ empleado.id }}" name="rol">
@@ -134,9 +136,10 @@
       </form>
 
       <form action="/usuarios/{{ empleado.id }}/password" method="POST" class="stack user-role-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
           <label for="password-{{ empleado.id }}">Restablecer contrasena</label>
-          <input id="password-{{ empleado.id }}" type="password" name="password" placeholder="Nueva contrasena temporal" minlength="6" required>
+          <input id="password-{{ empleado.id }}" type="password" name="password" autocomplete="new-password" placeholder="Nueva contrasena temporal…" minlength="6" required>
         </div>
         <div class="inline-actions">
           <button type="submit">Guardar contrasena</button>
@@ -148,6 +151,7 @@
 
       {% if empleado.rol != ROLE_ADMIN and empleado.id != current_user.id %}
       <form action="/usuarios/{{ empleado.id }}/estado" method="POST" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="button {% if empleado.activo %}button-danger{% else %}button-secondary{% endif %}">
           {{ 'Desactivar usuario' if empleado.activo else 'Activar usuario' }}
         </button>

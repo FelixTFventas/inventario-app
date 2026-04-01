@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+
+.venv/
+.vscode/
+.agents/
+skills-lock.json
+
+inventario.db
+instance/*.db
+
+flask.log
+server.out.log
+server.err.log
+
+static/uploads/
+static/pdfs/

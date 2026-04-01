@@ -45,24 +45,25 @@
     <p class="muted">Da de alta una nueva empresa con su admin principal y una contrasena temporal.</p>
 
     <form method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div>
         <label for="empresa">Empresa</label>
-        <input id="empresa" name="empresa" placeholder="Nombre de la empresa" required>
+          <input id="empresa" name="empresa" autocomplete="organization" placeholder="Ej. Inmobiliaria Norte…" required>
       </div>
 
       <div>
         <label for="nombre">Admin principal</label>
-        <input id="nombre" name="nombre" placeholder="Nombre del administrador" required>
+          <input id="nombre" name="nombre" autocomplete="name" placeholder="Ej. Laura Pérez…" required>
       </div>
 
       <div>
         <label for="email">Correo admin</label>
-        <input id="email" name="email" type="email" placeholder="admin@empresa.com" required>
+          <input id="email" name="email" type="email" inputmode="email" autocomplete="email" spellcheck="false" placeholder="Ej. admin@empresa.com…" required>
       </div>
 
       <div>
         <label for="password">Contrasena temporal</label>
-        <input id="password" name="password" type="password" placeholder="Crea una contrasena temporal" required>
+          <input id="password" name="password" type="password" autocomplete="new-password" placeholder="Crea una contrasena temporal…" required>
       </div>
 
       <div>
@@ -128,6 +129,7 @@
       </p>
 
       <form action="/superadmin/empresas/{{ empresa.id }}/estado" method="POST" class="stack user-role-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
           <label for="estado-{{ empresa.id }}">Cambiar estado</label>
           <select id="estado-{{ empresa.id }}" name="estado">
@@ -142,6 +144,7 @@
       </form>
 
       <form action="/superadmin/empresas/{{ empresa.id }}/entrar" method="POST" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="button button-secondary">Entrar a empresa</button>
       </form>
     </article>

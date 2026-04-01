@@ -32,9 +32,10 @@
   <article class="form-card fade-in delay-1">
     <h3>Nombre visible</h3>
     <form method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div>
         <label for="nombre">Nombre de la sección</label>
-        <input id="nombre" type="text" name="nombre" value="{{ seccion.nombre }}" required>
+        <input id="nombre" type="text" name="nombre" value="{{ seccion.nombre }}" autocomplete="off" required>
       </div>
 
       <div class="inline-actions">

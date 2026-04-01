@@ -18,9 +18,9 @@
       </div>
       <div class="hero-actions">
         {% if can_edit %}
-        <a class="button" href="#crear-inventario">Crear inventario</a>
+        <a class="button" href="#crear-inventario">Crear Inventario</a>
         {% endif %}
-        <a class="button button-secondary" href="#inventarios-registrados">Ver historial</a>
+        <a class="button button-secondary" href="#inventarios-registrados">Ver Historial</a>
       </div>
     </div>
 
@@ -47,10 +47,11 @@
     <p class="muted">Genera un nuevo checklist para entrega, revision o seguimiento del inmueble.</p>
 
     <form action="/crear_inventario/{{ inmueble.id }}" method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field-grid">
         <div>
         <label for="nombre">Nombre del inventario</label>
-        <input id="nombre" type="text" name="nombre" placeholder="Ej. Entrega marzo 2026" required>
+        <input id="nombre" type="text" name="nombre" autocomplete="off" placeholder="Ej. Entrega marzo 2026…" required>
         </div>
 
         <div>

@@ -13,9 +13,9 @@
       </p>
       <div class="hero-actions">
         {% if can_edit %}
-        <a class="button" href="#crear-inmueble">Registrar inmueble</a>
+        <a class="button" href="#crear-inmueble">Registrar Inmueble</a>
         {% endif %}
-        <a class="button button-secondary" href="#lista-inmuebles">Explorar inventario</a>
+        <a class="button button-secondary" href="#lista-inmuebles">Explorar Inventario</a>
       </div>
       <div class="hero-mini-stats">
         <div>
@@ -87,14 +87,15 @@
     </div>
 
     <form action="/crear" method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div>
         <label for="direccion">Dirección</label>
-        <input id="direccion" type="text" name="direccion" placeholder="Ej. Cra 12 #18-45" required>
+        <input id="direccion" type="text" name="direccion" autocomplete="street-address" placeholder="Ej. Cra 12 #18-45…" required>
       </div>
 
       <div>
         <label for="propietario">Propietario</label>
-        <input id="propietario" type="text" name="propietario" placeholder="Nombre del propietario" required>
+        <input id="propietario" type="text" name="propietario" autocomplete="name" placeholder="Ej. María Gómez…" required>
       </div>
 
       <div>
@@ -157,7 +158,8 @@
           type="text"
           name="q"
           value="{{ search_query or '' }}"
-          placeholder="Busca por direccion o propietario"
+          autocomplete="off"
+          placeholder="Ej. dirección o propietario…"
         >
       </div>
       <div class="search-actions">
@@ -170,7 +172,7 @@
 
     {% if search_query %}
     <p class="search-summary">
-      Mostrando {{ inmuebles|length }} resultado(s) para "{{ search_query }}".
+      Mostrando {{ inmuebles|length }} resultado(s) para “{{ search_query }}”.
     </p>
     {% endif %}
   </section>

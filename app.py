@@ -1,4 +1,5 @@
 import base64
+from io import BytesIO
 import os
 import re
 import uuid
@@ -23,9 +24,20 @@ from flask_login import (
     logout_user,
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFError, CSRFProtect
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import (
+    Image,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 from sqlalchemy import or_
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -62,16 +74,48 @@ STATUS_SUSPENDED = "suspendida"
 STATUS_CANCELLED = "cancelada"
 VALID_COMPANY_STATUSES = {STATUS_ACTIVE, STATUS_SUSPENDED, STATUS_CANCELLED}
 
-SUPERADMIN_NAME = os.environ.get("SUPERADMIN_NAME", "Propietario")
-SUPERADMIN_EMAIL = os.environ.get("SUPERADMIN_EMAIL", "admin@inventario.local")
-SUPERADMIN_PASSWORD = os.environ.get("SUPERADMIN_PASSWORD", "Admin123456!")
+APP_ENV = os.environ.get("APP_ENV", os.environ.get("FLASK_ENV", "development")).lower()
+IS_PRODUCTION = APP_ENV in {"production", "prod"}
+
+DEFAULT_SUPERADMIN_NAME = "Propietario"
+DEFAULT_SUPERADMIN_EMAIL = "admin@inventario.local"
+DEFAULT_SUPERADMIN_PASSWORD = "Admin123456!"
+
+SUPERADMIN_NAME = os.environ.get("SUPERADMIN_NAME", DEFAULT_SUPERADMIN_NAME)
+SUPERADMIN_EMAIL = os.environ.get("SUPERADMIN_EMAIL")
+SUPERADMIN_PASSWORD = os.environ.get("SUPERADMIN_PASSWORD")
 INTERNAL_COMPANY_SLUG = "plataforma-interna"
 
 
+def get_runtime_secret_key() -> str:
+    secret_key = os.environ.get("SECRET_KEY")
+    if secret_key:
+        return secret_key
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            "Configura la variable de entorno SECRET_KEY antes de iniciar en produccion."
+        )
+    return "dev-secret-local-only"
+
+
+def get_superadmin_seed_credentials() -> tuple[str, str, str]:
+    email = SUPERADMIN_EMAIL
+    password = SUPERADMIN_PASSWORD
+
+    if IS_PRODUCTION and (not email or not password):
+        raise RuntimeError(
+            "Configura SUPERADMIN_EMAIL y SUPERADMIN_PASSWORD antes de iniciar en produccion."
+        )
+
+    return (
+        SUPERADMIN_NAME,
+        email or DEFAULT_SUPERADMIN_EMAIL,
+        password or DEFAULT_SUPERADMIN_PASSWORD,
+    )
+
+
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY", "dev-secret-cambiar-en-produccion"
-)
+app.config["SECRET_KEY"] = get_runtime_secret_key()
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", f"sqlite:///{DB_PATH}"
 )
@@ -85,11 +129,22 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Debes iniciar sesion para continuar."
+
+if not os.environ.get("SECRET_KEY"):
+    app.logger.warning(
+        "Usando SECRET_KEY de desarrollo. Configura SECRET_KEY para entornos compartidos o produccion."
+    )
+
+if not SUPERADMIN_EMAIL or not SUPERADMIN_PASSWORD:
+    app.logger.warning(
+        "Usando credenciales locales por defecto para superadmin. Configura SUPERADMIN_EMAIL y SUPERADMIN_PASSWORD fuera de desarrollo."
+    )
 
 
 class Empresa(db.Model):
@@ -341,9 +396,16 @@ def get_user_for_current_company_or_404(user_id: int) -> Usuario:
     usuario = db.session.get(Usuario, user_id)
     if not usuario:
         abort(404)
-    if usuario.empresa_id != current_user.empresa_id:
+    if usuario.empresa_id != get_effective_company_id():
         abort(403)
     return usuario
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(error):
+    flash("La sesion del formulario expiro. Intenta enviar nuevamente.", "error")
+    destino = request.referrer or url_for("login")
+    return redirect(destino)
 
 
 @app.context_processor
@@ -477,7 +539,14 @@ def crear_inventario(id):
     db.session.add(nuevo)
     db.session.flush()
 
-    secciones_base = ["Sala", "Cocina", "Comedor", "Habitacion", "Baño", "Exterior"]
+    secciones_base = [
+        "Fachada",
+        "Sala",
+        "Comedor",
+        "Cocina",
+        "Habitación principal",
+        "Habitación auxiliar",
+    ]
     for nombre_seccion in secciones_base:
         db.session.add(Seccion(inventario_id=nuevo.id, nombre=nombre_seccion))
 
@@ -659,85 +728,216 @@ def inventario_pdf(id):
     ruta_pdf = PDF_DIR / nombre_pdf
 
     styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "InventarioTitle",
+        parent=styles["Title"],
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor("#153385"),
+        spaceAfter=10,
+    )
+    section_style = ParagraphStyle(
+        "InventarioSection",
+        parent=styles["Heading2"],
+        fontSize=14,
+        leading=18,
+        textColor=colors.HexColor("#153385"),
+        spaceBefore=8,
+        spaceAfter=8,
+    )
+    meta_style = ParagraphStyle(
+        "InventarioMeta",
+        parent=styles["BodyText"],
+        fontSize=10.5,
+        leading=14,
+        textColor=colors.HexColor("#243041"),
+        spaceAfter=6,
+    )
+    note_style = ParagraphStyle(
+        "InventarioNote",
+        parent=styles["BodyText"],
+        fontSize=9.5,
+        leading=13,
+        textColor=colors.HexColor("#5b6472"),
+        spaceAfter=8,
+    )
+
+    def dibujar_encabezado_y_pie(canvas, doc):
+        canvas.saveState()
+
+        canvas.setStrokeColor(colors.HexColor("#d7e1f5"))
+        canvas.setLineWidth(1)
+        canvas.line(doc.leftMargin, 752, letter[0] - doc.rightMargin, 752)
+
+        canvas.setFillColor(colors.HexColor("#153385"))
+        canvas.setFont("Helvetica-Bold", 11)
+        canvas.drawString(doc.leftMargin, 764, "Inventario App")
+
+        canvas.setFillColor(colors.HexColor("#5b6472"))
+        canvas.setFont("Helvetica", 9)
+        canvas.drawRightString(
+            letter[0] - doc.rightMargin,
+            764,
+            f"Inventario #{inventario.id}",
+        )
+
+        canvas.line(doc.leftMargin, 30, letter[0] - doc.rightMargin, 30)
+        canvas.drawString(doc.leftMargin, 18, inmueble.empresa.nombre)
+        canvas.drawRightString(
+            letter[0] - doc.rightMargin,
+            18,
+            f"Pagina {canvas.getPageNumber()}",
+        )
+        canvas.restoreState()
+
     elementos = []
 
-    logo = STATIC_DIR / "logo.png"
-    if logo.exists():
-        elementos.append(Image(str(logo), width=120, height=60))
-        elementos.append(Spacer(1, 10))
-
-    elementos.append(Paragraph("INVENTARIO DE ENTREGA DE INMUEBLE", styles["Title"]))
-    elementos.append(Spacer(1, 20))
+    elementos.append(Paragraph("Inventario de Entrega de Inmueble", title_style))
     elementos.append(
-        Paragraph(f"Empresa: {inmueble.empresa.nombre}", styles["BodyText"])
+        Paragraph("Resumen general del recorrido documentado.", note_style)
     )
-    elementos.append(Paragraph(f"Direccion: {inmueble.direccion}", styles["BodyText"]))
+    elementos.append(Spacer(1, 12))
     elementos.append(
-        Paragraph(f"Propietario: {inmueble.propietario}", styles["BodyText"])
+        Paragraph(f"<b>Empresa:</b> {inmueble.empresa.nombre}", meta_style)
     )
+    elementos.append(Paragraph(f"<b>Direccion:</b> {inmueble.direccion}", meta_style))
     elementos.append(
-        Paragraph(f"Fecha de recepcion: {inmueble.fecha_recepcion}", styles["BodyText"])
+        Paragraph(f"<b>Fecha de recepcion:</b> {inmueble.fecha_recepcion}", meta_style)
     )
-    elementos.append(Paragraph(f"Inventario: {inventario.nombre}", styles["BodyText"]))
+    elementos.append(Paragraph(f"<b>Inventario:</b> {inventario.nombre}", meta_style))
     elementos.append(
-        Paragraph(f"Fecha inventario: {inventario.fecha}", styles["BodyText"])
+        Paragraph(f"<b>Fecha inventario:</b> {inventario.fecha}", meta_style)
     )
-    elementos.append(Spacer(1, 20))
+    elementos.append(Spacer(1, 18))
 
     for seccion in secciones:
-        elementos.append(Paragraph(f"Seccion: {seccion.nombre}", styles["Heading2"]))
-        elementos.append(Spacer(1, 10))
+        elementos.append(Paragraph(f"Seccion: {seccion.nombre}", section_style))
+        elementos.append(
+            Paragraph(
+                f"<b>Archivos:</b> {len(seccion.fotos)} | <b>Observaciones:</b> {len(seccion.observaciones)}",
+                note_style,
+            )
+        )
 
+        tiene_evidencia = False
+        galeria = []
         for foto in seccion.fotos:
             ruta_archivo = UPLOAD_DIR / foto.archivo
             if not ruta_archivo.exists():
                 continue
 
+            tiene_evidencia = True
             ext = foto.archivo.rsplit(".", 1)[-1].lower()
             if ext in {"jpg", "jpeg", "png", "gif", "webp"}:
-                elementos.append(Image(str(ruta_archivo), width=350, height=220))
+                imagen = Image(str(ruta_archivo))
+                imagen._restrictSize(2.6 * inch, 2.1 * inch)
+                galeria.append(imagen)
             else:
+                if galeria:
+                    filas = [
+                        galeria[index : index + 2]
+                        for index in range(0, len(galeria), 2)
+                    ]
+                    for fila in filas:
+                        if len(fila) == 1:
+                            fila.append(Spacer(1, 1))
+                    tabla_galeria = Table(
+                        filas, colWidths=[2.75 * inch, 2.75 * inch], hAlign="LEFT"
+                    )
+                    tabla_galeria.setStyle(
+                        TableStyle(
+                            [
+                                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ]
+                        )
+                    )
+                    elementos.append(tabla_galeria)
+                    galeria = []
                 elementos.append(
-                    Paragraph(f"Video adjunto: {foto.archivo}", styles["BodyText"])
+                    Paragraph(f"<b>Video adjunto:</b> {foto.archivo}", note_style)
                 )
-            elementos.append(Spacer(1, 10))
 
+        if galeria:
+            filas = [galeria[index : index + 2] for index in range(0, len(galeria), 2)]
+            for fila in filas:
+                if len(fila) == 1:
+                    fila.append(Spacer(1, 1))
+            tabla_galeria = Table(
+                filas, colWidths=[2.75 * inch, 2.75 * inch], hAlign="LEFT"
+            )
+            tabla_galeria.setStyle(
+                TableStyle(
+                    [
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
+            elementos.append(tabla_galeria)
+            elementos.append(Spacer(1, 4))
+
+        if not tiene_evidencia:
+            elementos.append(Paragraph("Sin evidencia multimedia cargada.", note_style))
+            elementos.append(Spacer(1, 6))
+
+        tiene_observaciones = False
         for observacion in seccion.observaciones:
+            tiene_observaciones = True
             elementos.append(
-                Paragraph(f"Observacion: {observacion.comentario}", styles["BodyText"])
+                Paragraph(f"<b>Observacion:</b> {observacion.comentario}", meta_style)
             )
             elementos.append(Spacer(1, 10))
+
+        if not tiene_observaciones:
+            elementos.append(Paragraph("Sin observaciones registradas.", note_style))
 
         elementos.append(Spacer(1, 20))
 
     firmas = Firma.query.filter_by(inventario_id=id).order_by(Firma.id.asc()).all()
     if firmas:
         elementos.append(PageBreak())
-        elementos.append(Paragraph("Firmas del inventario", styles["Title"]))
-        elementos.append(Spacer(1, 40))
+        elementos.append(Paragraph("Firmas del inventario", title_style))
+        elementos.append(Spacer(1, 18))
 
         for firma in firmas:
             elementos.append(
-                Paragraph(f"Firmado por: {firma.nombre}", styles["BodyText"])
+                Paragraph(f"<b>Firmado por:</b> {firma.nombre}", meta_style)
             )
             elementos.append(Spacer(1, 10))
 
             try:
                 imagen_base64 = firma.imagen.split(",", 1)[1]
                 imagen_bytes = base64.b64decode(imagen_base64)
-                ruta_firma = UPLOAD_DIR / f"firma_{firma.id}.png"
-                with open(ruta_firma, "wb") as fh:
-                    fh.write(imagen_bytes)
-                elementos.append(Image(str(ruta_firma), width=250, height=120))
-                elementos.append(Spacer(1, 30))
+                imagen_firma = Image(BytesIO(imagen_bytes))
+                imagen_firma._restrictSize(3.2 * inch, 1.6 * inch)
+                elementos.append(imagen_firma)
+                elementos.append(Spacer(1, 20))
             except Exception:
                 elementos.append(
-                    Paragraph("No se pudo renderizar una firma.", styles["BodyText"])
+                    Paragraph("No se pudo renderizar una firma.", note_style)
                 )
                 elementos.append(Spacer(1, 20))
 
-    pdf = SimpleDocTemplate(str(ruta_pdf), pagesize=letter)
-    pdf.build(elementos)
+    pdf = SimpleDocTemplate(
+        str(ruta_pdf),
+        pagesize=letter,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=78,
+        bottomMargin=46,
+    )
+    pdf.build(
+        elementos,
+        onFirstPage=dibujar_encabezado_y_pie,
+        onLaterPages=dibujar_encabezado_y_pie,
+    )
 
     return redirect(url_for("static", filename=f"pdfs/{nombre_pdf}"))
 
@@ -1079,6 +1279,9 @@ def initialize_database() -> None:
 
     superadmin = Usuario.query.filter_by(rol=ROLE_SUPERADMIN).first()
     if not superadmin:
+        superadmin_name, superadmin_email, superadmin_password = (
+            get_superadmin_seed_credentials()
+        )
         empresa_dummy = Empresa.query.filter_by(slug=INTERNAL_COMPANY_SLUG).first()
         if not empresa_dummy:
             empresa_dummy = Empresa(
@@ -1091,9 +1294,9 @@ def initialize_database() -> None:
             db.session.flush()
 
         superadmin = Usuario(
-            nombre=SUPERADMIN_NAME,
-            email=SUPERADMIN_EMAIL,
-            password=generate_password_hash(SUPERADMIN_PASSWORD),
+            nombre=superadmin_name,
+            email=superadmin_email,
+            password=generate_password_hash(superadmin_password),
             rol=ROLE_SUPERADMIN,
             activo=True,
             empresa_id=empresa_dummy.id,
