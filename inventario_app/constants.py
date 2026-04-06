@@ -1,0 +1,30 @@
+ALLOWED_EXTENSIONS = {
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "mp4",
+    "mov",
+    "avi",
+    "mkv",
+    "webm",
+}
+
+ROLE_ADMIN = "admin_empresa"
+ROLE_EDITOR = "editor"
+ROLE_VIEWER = "visor"
+ROLE_SUPERADMIN = "superadmin"
+EDIT_ROLES = {ROLE_SUPERADMIN, ROLE_ADMIN, ROLE_EDITOR}
+VALID_ROLES = {ROLE_SUPERADMIN, ROLE_ADMIN, ROLE_EDITOR, ROLE_VIEWER}
+
+STATUS_ACTIVE = "activa"
+STATUS_SUSPENDED = "suspendida"
+STATUS_CANCELLED = "cancelada"
+VALID_COMPANY_STATUSES = {STATUS_ACTIVE, STATUS_SUSPENDED, STATUS_CANCELLED}
+
+DEFAULT_SUPERADMIN_NAME = "Propietario"
+DEFAULT_SUPERADMIN_EMAIL = "admin@inventario.local"
+DEFAULT_SUPERADMIN_PASSWORD = "Admin123456!"
+
+INTERNAL_COMPANY_SLUG = "plataforma-interna"

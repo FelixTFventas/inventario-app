@@ -1,0 +1,113 @@
+from urllib.parse import urlsplit
+
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_login import current_user, login_required, login_user, logout_user
+from werkzeug.security import check_password_hash
+
+from ..constants import ROLE_SUPERADMIN, STATUS_ACTIVE, VALID_ROLES
+from ..models import Usuario
+from ..services.access import user_is_superadmin
+
+
+bp = Blueprint("auth", __name__)
+
+
+def _is_safe_redirect_target(target: str | None) -> bool:
+    if not target:
+        return False
+    ref_url = urlsplit(request.host_url)
+    test_url = urlsplit(target)
+    return (
+        test_url.scheme in {"", "http", "https"}
+        and test_url.netloc in {"", ref_url.netloc}
+        and target.startswith("/")
+    )
+
+
+@bp.route("/registro", methods=["GET", "POST"], endpoint="registro")
+def registro():
+    flash(
+        "El registro publico esta deshabilitado. Contacta al administrador de la plataforma.",
+        "error",
+    )
+    return redirect(url_for("auth.login"))
+
+
+@bp.route("/login", methods=["GET", "POST"], endpoint="login")
+def login():
+    if current_user.is_authenticated:
+        if user_is_superadmin(current_user):
+            return redirect(url_for("superadmin.superadmin_empresas"))
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        usuario = Usuario.query.filter_by(email=email).first()
+
+        if usuario and check_password_hash(usuario.password, password):
+            if not usuario.activo:
+                flash(
+                    "Esta cuenta esta desactivada. Contacta al administrador de tu empresa.",
+                    "error",
+                )
+                return redirect(url_for("auth.login"))
+
+            if usuario.rol == ROLE_SUPERADMIN:
+                session.pop("superadmin_company_id", None)
+                login_user(usuario)
+                current_app.logger.info("superadmin_login email=%s", usuario.email)
+                flash("Bienvenido.", "success")
+                return redirect(url_for("superadmin.superadmin_empresas"))
+
+            if not usuario.empresa or not usuario.empresa.activo:
+                flash("La empresa asociada a esta cuenta no esta activa.", "error")
+                return redirect(url_for("auth.login"))
+
+            if usuario.empresa.estado != STATUS_ACTIVE:
+                flash("La empresa no tiene acceso habilitado en este momento.", "error")
+                return redirect(url_for("auth.login"))
+
+            if usuario.rol not in VALID_ROLES:
+                flash("La cuenta no tiene un rol valido configurado.", "error")
+                return redirect(url_for("auth.login"))
+
+            login_user(usuario)
+            current_app.logger.info(
+                "user_login email=%s empresa_id=%s rol=%s",
+                usuario.email,
+                usuario.empresa_id,
+                usuario.rol,
+            )
+            flash("Bienvenido.", "success")
+            next_url = request.args.get("next")
+            safe_next_url = (
+                next_url if next_url and _is_safe_redirect_target(next_url) else None
+            )
+            if safe_next_url is not None:
+                return redirect(safe_next_url)
+            return redirect(url_for("dashboard.index"))
+
+        current_app.logger.warning("failed_login email=%s", email)
+        flash("Credenciales invalidas.", "error")
+
+    return render_template("login.html")
+
+
+@bp.route("/logout", methods=["POST"], endpoint="logout")
+@login_required
+def logout():
+    current_app.logger.info("user_logout user_id=%s", current_user.get_id())
+    session.pop("superadmin_company_id", None)
+    logout_user()
+    flash("Sesion cerrada.", "success")
+    return redirect(url_for("auth.login"))

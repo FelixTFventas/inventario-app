@@ -36,10 +36,10 @@
           {% for foto in s.fotos %}
             {% if foto.archivo.endswith('.mp4') %}
             <video controls>
-              <source src="/static/uploads/{{ foto.archivo }}" type="video/mp4">
+              <source src="{{ uploaded_file_url(foto.archivo) }}" type="video/mp4">
             </video>
             {% else %}
-            <img src="/static/uploads/{{ foto.archivo }}" alt="Archivo de {{ s.nombre }}">
+            <img src="{{ uploaded_file_url(foto.archivo) }}" alt="Archivo de {{ s.nombre }}">
             {% endif %}
           {% endfor %}
         </div>
@@ -65,6 +65,18 @@
       </article>
       {% endfor %}
     </section>
+
+    {% if pagination and pagination.pages > 1 %}
+    <div class="inline-actions" style="justify-content:center; margin-top: 1.5rem;">
+      {% if pagination.has_prev %}
+      <a class="button button-secondary" href="?page={{ pagination.prev_num }}">Anterior</a>
+      {% endif %}
+      <span class="chip">Página {{ pagination.page }} de {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a class="button button-secondary" href="?page={{ pagination.next_num }}">Siguiente</a>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 </body>
 </html>

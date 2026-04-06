@@ -4,14 +4,14 @@ __pycache__/
 .venv/
 .vscode/
 .agents/
+.env
+.env.*
 skills-lock.json
 
 inventario.db
 instance/*.db
+instance/storage/
 
 flask.log
 server.out.log
 server.err.log
-
-static/uploads/
-static/pdfs/

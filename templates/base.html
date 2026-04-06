@@ -56,7 +56,10 @@
         {% endif %}
         {% endif %}
         {% if current_user.is_authenticated %}
-        <a class="topnav-link" href="/logout">Cerrar sesión</a>
+        <form action="/logout" method="POST" class="inline-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="topnav-link topnav-button">Cerrar sesión</button>
+        </form>
         {% else %}
         <a class="topnav-link" href="/login">Iniciar sesión</a>
         {% endif %}
