@@ -7,3 +7,4 @@ psycopg[binary]
 pytest
 reportlab
 gunicorn
+psycopg2-binary
