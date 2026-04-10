@@ -111,4 +111,4 @@ def inventario_pdf(id):
         return redirect(url_for("inventarios.ver_inventario", id=id))
 
     current_app.logger.info("pdf_generated inventario_id=%s archivo=%s", id, nombre_pdf)
-    return redirect(get_pdf_file_url(nombre_pdf))
+    return redirect(get_pdf_file_url(inventario.id))

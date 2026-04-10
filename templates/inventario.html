@@ -153,69 +153,74 @@
 {% block scripts %}
 <script>
   const canvas = document.getElementById("canvas")
-  const ctx = canvas.getContext("2d")
-  let dibujando = false
+  if (canvas) {
+    const ctx = canvas.getContext("2d")
+    let dibujando = false
 
-  function ajustarCanvas() {
-    const ratio = Math.max(window.devicePixelRatio || 1, 1)
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * ratio
-    canvas.height = 280 * ratio
-    ctx.scale(ratio, ratio)
-    ctx.lineWidth = 2.5
-    ctx.lineCap = "round"
-    ctx.strokeStyle = "#2f241d"
-  }
-
-  function obtenerPosicion(event) {
-    const rect = canvas.getBoundingClientRect()
-    const punto = event.touches ? event.touches[0] : event
-    return {
-      x: punto.clientX - rect.left,
-      y: punto.clientY - rect.top
+    function ajustarCanvas() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1)
+      const rect = canvas.getBoundingClientRect()
+      canvas.width = rect.width * ratio
+      canvas.height = 280 * ratio
+      ctx.scale(ratio, ratio)
+      ctx.lineWidth = 2.5
+      ctx.lineCap = "round"
+      ctx.strokeStyle = "#2f241d"
     }
-  }
 
-  function empezar(event) {
-    event.preventDefault()
-    dibujando = true
-    const { x, y } = obtenerPosicion(event)
-    ctx.beginPath()
-    ctx.moveTo(x, y)
-  }
+    function obtenerPosicion(event) {
+      const rect = canvas.getBoundingClientRect()
+      const punto = event.touches ? event.touches[0] : event
+      return {
+        x: punto.clientX - rect.left,
+        y: punto.clientY - rect.top
+      }
+    }
 
-  function terminar(event) {
-    if (event) {
+    function empezar(event) {
       event.preventDefault()
+      dibujando = true
+      const { x, y } = obtenerPosicion(event)
+      ctx.beginPath()
+      ctx.moveTo(x, y)
     }
-    dibujando = false
-    ctx.beginPath()
-  }
 
-  function dibujar(event) {
-    if (!dibujando) return
-    event.preventDefault()
-    const { x, y } = obtenerPosicion(event)
-    ctx.lineTo(x, y)
-    ctx.stroke()
-  }
+    function terminar(event) {
+      if (event) {
+        event.preventDefault()
+      }
+      dibujando = false
+      ctx.beginPath()
+    }
 
-  function limpiar() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-  }
+    function dibujar(event) {
+      if (!dibujando) return
+      event.preventDefault()
+      const { x, y } = obtenerPosicion(event)
+      ctx.lineTo(x, y)
+      ctx.stroke()
+    }
 
-  function guardarFirma() {
-    document.getElementById("firma").value = canvas.toDataURL()
-  }
+    function limpiar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
 
-  window.addEventListener("resize", ajustarCanvas)
-  canvas.addEventListener("mousedown", empezar)
-  canvas.addEventListener("mouseup", terminar)
-  canvas.addEventListener("mouseleave", terminar)
-  canvas.addEventListener("mousemove", dibujar)
-  canvas.addEventListener("touchstart", empezar, { passive: false })
-  canvas.addEventListener("touchend", terminar, { passive: false })
-  canvas.addEventListener("touchmove", dibujar, { passive: false })
-  ajustarCanvas()
+    function guardarFirma() {
+      document.getElementById("firma").value = canvas.toDataURL()
+    }
+
+    window.limpiar = limpiar
+    window.guardarFirma = guardarFirma
+
+    window.addEventListener("resize", ajustarCanvas)
+    canvas.addEventListener("mousedown", empezar)
+    canvas.addEventListener("mouseup", terminar)
+    canvas.addEventListener("mouseleave", terminar)
+    canvas.addEventListener("mousemove", dibujar)
+    canvas.addEventListener("touchstart", empezar, { passive: false })
+    canvas.addEventListener("touchend", terminar, { passive: false })
+    canvas.addEventListener("touchmove", dibujar, { passive: false })
+    ajustarCanvas()
+  }
 </script>
 {% endblock %}

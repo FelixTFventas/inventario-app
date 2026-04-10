@@ -1,7 +1,8 @@
 from flask import Blueprint, current_app, render_template, request
 
 from ..models import Inventario, Seccion
-from ..services.media_service import get_uploaded_file_url
+from ..services.media_service import get_public_uploaded_file_url
+from ..utils.files import is_video_filename
 
 
 bp = Blueprint("public", __name__)
@@ -23,5 +24,6 @@ def inventario_publico(token):
         inventario=inventario,
         secciones=secciones,
         pagination=pagination,
-        uploaded_file_url=get_uploaded_file_url,
+        public_uploaded_file_url=get_public_uploaded_file_url,
+        is_video_file=is_video_filename,
     )

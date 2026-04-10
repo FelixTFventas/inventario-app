@@ -73,3 +73,14 @@ def test_admin_can_create_manual_section(client, login, seeded_data, app):
             ).count()
             == 1
         )
+
+
+def test_viewer_can_open_inventory_without_signature_canvas(client, login, seeded_data):
+    login(seeded_data["viewer_a"].email)
+
+    response = client.get(f"/inventario/{seeded_data['inventario_a'].id}")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'id="canvas"' not in body
+    assert "if (canvas)" in body

@@ -23,6 +23,7 @@ from ..services.media_service import (
     save_uploaded_file,
 )
 from ..utils.files import validate_uploaded_file
+from ..utils.files import is_video_filename
 
 
 bp = Blueprint("secciones", __name__)
@@ -43,6 +44,7 @@ def ver_seccion(id):
         observaciones=observaciones,
         inventario_id=seccion.inventario_id,
         uploaded_file_url=get_uploaded_file_url,
+        is_video_file=is_video_filename,
     )
 
 

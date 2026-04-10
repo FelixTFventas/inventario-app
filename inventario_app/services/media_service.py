@@ -40,9 +40,13 @@ def get_pdf_file_path(filename: str) -> Path:
     return get_pdf_dir() / filename
 
 
-def get_uploaded_file_url(filename: str) -> str:
-    return url_for("media.uploaded_file", filename=filename)
+def get_uploaded_file_url(foto_id: int) -> str:
+    return url_for("media.uploaded_file", foto_id=foto_id)
 
 
-def get_pdf_file_url(filename: str) -> str:
-    return url_for("media.generated_pdf", filename=filename)
+def get_public_uploaded_file_url(token: str, foto_id: int) -> str:
+    return url_for("media.public_uploaded_file", token=token, foto_id=foto_id)
+
+
+def get_pdf_file_url(inventario_id: int) -> str:
+    return url_for("media.generated_pdf", inventario_id=inventario_id)

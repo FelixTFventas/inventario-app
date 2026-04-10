@@ -34,12 +34,12 @@
         {% if s.fotos %}
         <div class="public-media">
           {% for foto in s.fotos %}
-            {% if foto.archivo.endswith('.mp4') %}
+            {% if is_video_file(foto.archivo) %}
             <video controls>
-              <source src="{{ uploaded_file_url(foto.archivo) }}" type="video/mp4">
+              <source src="{{ public_uploaded_file_url(inventario.token, foto.id) }}">
             </video>
             {% else %}
-            <img src="{{ uploaded_file_url(foto.archivo) }}" alt="Archivo de {{ s.nombre }}">
+            <img src="{{ public_uploaded_file_url(inventario.token, foto.id) }}" alt="Archivo de {{ s.nombre }}">
             {% endif %}
           {% endfor %}
         </div>

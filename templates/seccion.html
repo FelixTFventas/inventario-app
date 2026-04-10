@@ -301,24 +301,24 @@
   <div class="gallery-grid">
     {% for foto in fotos %}
     <article class="media-card fade-in delay-1">
-      {% if foto.archivo.endswith('.mp4') %}
+      {% if is_video_file(foto.archivo) %}
       <button
         type="button"
         class="gallery-link gallery-link-button"
         data-gallery-item
         data-type="video"
-        data-src="{{ uploaded_file_url(foto.archivo) }}"
+        data-src="{{ uploaded_file_url(foto.id) }}"
         data-title="{{ seccion.nombre }}"
         data-file-name="{{ foto.archivo }}"
         data-index="{{ loop.index0 }}"
       >
         <video muted playsinline preload="metadata" tabindex="-1" aria-hidden="true">
-          <source src="{{ uploaded_file_url(foto.archivo) }}">
+          <source src="{{ uploaded_file_url(foto.id) }}">
         </video>
       </button>
       {% else %}
-      <a href="{{ uploaded_file_url(foto.archivo) }}" class="gallery-link" data-gallery-item data-type="image" data-src="{{ uploaded_file_url(foto.archivo) }}" data-title="{{ seccion.nombre }}" data-file-name="{{ foto.archivo }}" data-index="{{ loop.index0 }}">
-        <img src="{{ uploaded_file_url(foto.archivo) }}" alt="Archivo de {{ seccion.nombre }}" width="1200" height="900" loading="lazy">
+      <a href="{{ uploaded_file_url(foto.id) }}" class="gallery-link" data-gallery-item data-type="image" data-src="{{ uploaded_file_url(foto.id) }}" data-title="{{ seccion.nombre }}" data-file-name="{{ foto.archivo }}" data-index="{{ loop.index0 }}">
+        <img src="{{ uploaded_file_url(foto.id) }}" alt="Archivo de {{ seccion.nombre }}" width="1200" height="900" loading="lazy">
       </a>
       {% endif %}
       <div class="media-meta">

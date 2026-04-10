@@ -19,6 +19,10 @@ def unique_filename(filename: str) -> str:
     return f"{uuid.uuid4().hex}.{ext}"
 
 
+def is_video_filename(filename: str) -> bool:
+    return Path(filename).suffix.lower().lstrip(".") in VIDEO_EXTENSIONS
+
+
 def validate_uploaded_file(file_storage) -> str | None:
     filename = file_storage.filename or ""
     if not allowed_file(filename):

@@ -1,6 +1,7 @@
 from io import BytesIO
 from pathlib import Path
 
+from inventario_app.extensions import db
 from inventario_app.models import Foto
 
 
@@ -53,28 +54,83 @@ def test_uploaded_media_is_served_from_media_route(client, login, seeded_data, a
     with app.app_context():
         foto = Foto.query.filter_by(seccion_id=seeded_data["seccion_a"].id).first()
         assert foto is not None
-        response = client.get(f"/media/uploads/{foto.archivo}")
+        response = client.get(f"/media/uploads/{foto.id}")
 
     assert response.status_code == 200
     assert response.data == b"fake png content"
 
 
+def test_uploaded_media_requires_company_access(client, login, seeded_data, app):
+    with app.app_context():
+        foto = Foto(seccion_id=seeded_data["seccion_a"].id, archivo="privada.png")
+        db.session.add(foto)
+        db.session.commit()
+        foto_id = foto.id
+
+    upload_path = Path(app.config["UPLOAD_FOLDER"]) / "privada.png"
+    upload_path.write_bytes(b"private image")
+
+    anonymous_response = client.get(f"/media/uploads/{foto_id}", follow_redirects=False)
+    assert anonymous_response.status_code == 302
+
+    login(seeded_data["admin_b"].email)
+    forbidden_response = client.get(f"/media/uploads/{foto_id}")
+    assert forbidden_response.status_code == 403
+
+
+def test_public_media_route_requires_matching_token(client, seeded_data, app):
+    with app.app_context():
+        foto = Foto(seccion_id=seeded_data["seccion_a"].id, archivo="publica.png")
+        db.session.add(foto)
+        db.session.commit()
+        foto_id = foto.id
+
+    upload_path = Path(app.config["UPLOAD_FOLDER"]) / "publica.png"
+    upload_path.write_bytes(b"public image")
+
+    ok_response = client.get(
+        f"/publico/{seeded_data['inventario_a'].token}/media/{foto_id}"
+    )
+    assert ok_response.status_code == 200
+    assert ok_response.data == b"public image"
+
+    bad_response = client.get(
+        f"/publico/{seeded_data['inventario_b'].token}/media/{foto_id}"
+    )
+    assert bad_response.status_code == 404
+
+
 def test_generated_pdf_route_requires_login(client, login, seeded_data, app):
-    pdf_filename = "inventario_test.pdf"
-    pdf_path = Path(app.config["PDF_FOLDER"]) / pdf_filename
+    pdf_path = (
+        Path(app.config["PDF_FOLDER"])
+        / f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    )
     pdf_path.write_bytes(b"%PDF-1.4\nmock pdf")
 
     anonymous_response = client.get(
-        f"/media/pdfs/{pdf_filename}", follow_redirects=False
+        f"/media/pdfs/{seeded_data['inventario_a'].id}", follow_redirects=False
     )
     assert anonymous_response.status_code == 302
     assert (
-        "/login?next=%2Fmedia%2Fpdfs%2Finventario_test.pdf"
+        f"/login?next=%2Fmedia%2Fpdfs%2F{seeded_data['inventario_a'].id}"
         in anonymous_response.headers["Location"]
     )
 
     login(seeded_data["admin_a"].email)
-    authenticated_response = client.get(f"/media/pdfs/{pdf_filename}")
+    authenticated_response = client.get(f"/media/pdfs/{seeded_data['inventario_a'].id}")
 
     assert authenticated_response.status_code == 200
     assert authenticated_response.data == b"%PDF-1.4\nmock pdf"
+
+
+def test_generated_pdf_route_blocks_other_company(client, login, seeded_data, app):
+    pdf_path = (
+        Path(app.config["PDF_FOLDER"])
+        / f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    )
+    pdf_path.write_bytes(b"%PDF-1.4\nprivate pdf")
+
+    login(seeded_data["admin_b"].email)
+    response = client.get(f"/media/pdfs/{seeded_data['inventario_a'].id}")
+
+    assert response.status_code == 403
