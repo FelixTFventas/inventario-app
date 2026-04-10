@@ -236,14 +236,16 @@ textarea {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #171717;
-  color: #ffffff;
   display: grid;
   place-items: center;
-  font-family: "Nunito", sans-serif;
-  font-size: 1.45rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  background: transparent;
+  overflow: hidden;
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-title,
@@ -1421,6 +1423,20 @@ select:focus-visible {
     linear-gradient(180deg, #16398f 0%, #102966 100%);
   color: #f8fbff;
   border-right-color: rgba(255, 255, 255, 0.12);
+}
+
+.auth-brand-mark {
+  width: 92px;
+  height: 92px;
+  margin-bottom: 1.1rem;
+  display: grid;
+  place-items: center;
+}
+
+.auth-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .auth-feature .auth-subtitle,

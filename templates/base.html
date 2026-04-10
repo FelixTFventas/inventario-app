@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" href="/static/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <meta name="theme-color" content="#153385">
   <title>{% block title %}Inventario App{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +19,9 @@
   <header class="topbar fade-in">
     <div class="topbar-shell">
       <a class="brand brand-link" href="/">
-        <div class="brand-mark">IF</div>
+        <div class="brand-mark">
+          <img src="/static/logo.png" alt="Logo de Inventario App">
+        </div>
         <div class="brand-copy">
           <p class="brand-title">
             {% if is_superadmin and not current_company %}
