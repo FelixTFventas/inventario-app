@@ -1,3 +1,6 @@
+import base64
+import binascii
+import re
 import uuid
 
 from flask import (
@@ -52,6 +55,7 @@ def crear_inventario(id):
         "Sala",
         "Comedor",
         "Cocina",
+        "Baños",
         "Habitación principal",
         "Habitación auxiliar",
     ]:
@@ -83,13 +87,41 @@ def guardar_firma(id):
     require_edit_permission()
     inventario = get_inventario_for_current_company_or_404(id)
     nombre = request.form.get("nombre", "").strip()
+    cedula = request.form.get("cedula", "").strip() or None
+    celular = request.form.get("celular", "").strip() or None
+    correo = request.form.get("correo", "").strip() or None
     imagen = request.form.get("firma", "").strip()
 
     if not nombre or not imagen or "," not in imagen:
         flash("Firma invalida.", "error")
         return redirect(url_for("inventarios.ver_inventario", id=id))
 
-    db.session.add(Firma(inventario_id=inventario.id, nombre=nombre, imagen=imagen))
+    if correo and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", correo):
+        flash("Correo invalido.", "error")
+        return redirect(url_for("inventarios.ver_inventario", id=id))
+
+    encabezado, datos_base64 = imagen.split(",", 1)
+    encabezado = encabezado.lower()
+    if not encabezado.startswith("data:image/") or ";base64" not in encabezado:
+        flash("Firma invalida.", "error")
+        return redirect(url_for("inventarios.ver_inventario", id=id))
+
+    try:
+        base64.b64decode(datos_base64, validate=True)
+    except (ValueError, binascii.Error):
+        flash("Firma invalida.", "error")
+        return redirect(url_for("inventarios.ver_inventario", id=id))
+
+    db.session.add(
+        Firma(
+            inventario_id=inventario.id,
+            nombre=nombre,
+            cedula=cedula,
+            celular=celular,
+            correo=correo,
+            imagen=imagen,
+        )
+    )
     db.session.commit()
     flash("Firma guardada.", "success")
     return redirect(url_for("inventarios.ver_inventario", id=id))
@@ -102,6 +134,11 @@ def inventario_pdf(id):
     secciones = (
         Seccion.query.filter_by(inventario_id=id).order_by(Seccion.id.asc()).all()
     )
+    secciones = [
+        seccion
+        for seccion in secciones
+        if seccion.fotos or seccion.observaciones or (seccion.descripcion or "").strip()
+    ]
     firmas = Firma.query.filter_by(inventario_id=id).order_by(Firma.id.asc()).all()
     try:
         nombre_pdf = build_inventory_pdf(inventario, secciones, firmas)

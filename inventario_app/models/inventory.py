@@ -75,6 +75,7 @@ class Seccion(db.Model):
         db.Integer, db.ForeignKey("inventario.id"), nullable=False, index=True
     )
     nombre = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -139,6 +140,9 @@ class Firma(db.Model):
         db.Integer, db.ForeignKey("inventario.id"), nullable=False, index=True
     )
     nombre = db.Column(db.String(200), nullable=False)
+    cedula = db.Column(db.String(80), nullable=True)
+    celular = db.Column(db.String(80), nullable=True)
+    correo = db.Column(db.String(255), nullable=True)
     imagen = db.Column(db.Text, nullable=False)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()

@@ -370,9 +370,30 @@
   </div>
 </div>
 
-<section class="section split-layout detail-split-layout" id="observaciones">
-  {% if can_edit %}
+<section class="section split-layout detail-split-layout" id="detalles-seccion">
   <article class="form-card fade-in delay-1">
+    <h3>Descripción</h3>
+    {% if can_edit %}
+    <p class="muted">Guarda una descripción general de la sección para que aparezca en el PDF antes de las observaciones.</p>
+    <form action="/guardar_descripcion/{{ seccion.id }}" method="POST" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" autocomplete="off" placeholder="Ej. Estado general del baño, acabados, accesorios y detalles relevantes…">{{ seccion.descripcion or '' }}</textarea>
+      </div>
+      <div class="inline-actions">
+        <button type="submit">Guardar descripción</button>
+      </div>
+    </form>
+    {% elif seccion.descripcion %}
+    <p>{{ seccion.descripcion }}</p>
+    {% else %}
+    <p class="muted">No hay descripción registrada para esta sección.</p>
+    {% endif %}
+  </article>
+
+  {% if can_edit %}
+  <aside class="form-card fade-in delay-2">
     <h3>Agregar observación</h3>
     <form action="/crear_observacion/{{ seccion.id }}" method="POST" class="stack">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -384,16 +405,24 @@
         <button type="submit">Guardar observación</button>
       </div>
     </form>
-  </article>
+  </aside>
   {% else %}
-  <article class="form-card fade-in delay-1">
+  <aside class="form-card fade-in delay-2">
     <h3>Observaciones</h3>
     <p class="muted">Puedes revisar las observaciones registradas por tu equipo, pero no crear nuevas desde un perfil de solo lectura.</p>
-  </article>
+  </aside>
   {% endif %}
+</section>
 
-  <aside class="surface-card fade-in delay-2">
-    <h3>Observaciones registradas</h3>
+<section class="section" id="observaciones">
+  <div class="section-heading fade-in">
+    <div>
+      <h2>Observaciones registradas</h2>
+      <p>Consulta los comentarios adicionales capturados para esta sección.</p>
+    </div>
+  </div>
+
+  <div class="surface-card fade-in delay-1">
     {% if observaciones %}
     <div class="stack observation-stack">
       {% for o in observaciones %}
@@ -407,7 +436,7 @@
       <p>No hay observaciones aún para esta sección.</p>
     </div>
     {% endif %}
-  </aside>
+  </div>
 </section>
 {% endblock %}
 

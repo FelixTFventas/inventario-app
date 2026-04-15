@@ -131,6 +131,21 @@
       <input id="firma-nombre" type="text" name="nombre" autocomplete="name" placeholder="Ej. Laura Pérez…" required>
     </div>
 
+    <div>
+      <label for="firma-cedula">Cédula</label>
+      <input id="firma-cedula" type="text" name="cedula" inputmode="numeric" placeholder="Ej. 1234567890">
+    </div>
+
+    <div>
+      <label for="firma-celular">Celular</label>
+      <input id="firma-celular" type="tel" name="celular" autocomplete="tel" placeholder="Ej. 3001234567">
+    </div>
+
+    <div>
+      <label for="firma-correo">Correo electrónico</label>
+      <input id="firma-correo" type="email" name="correo" autocomplete="email" placeholder="Ej. correo@dominio.com">
+    </div>
+
     <div class="canvas-shell">
       <canvas id="canvas" width="700" height="280" aria-label="Área de firma"></canvas>
     </div>
@@ -162,7 +177,7 @@
       const rect = canvas.getBoundingClientRect()
       canvas.width = rect.width * ratio
       canvas.height = 280 * ratio
-      ctx.scale(ratio, ratio)
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
       ctx.lineWidth = 2.5
       ctx.lineCap = "round"
       ctx.strokeStyle = "#2f241d"

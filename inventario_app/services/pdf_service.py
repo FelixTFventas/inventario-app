@@ -136,6 +136,13 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
             elementos.append(Paragraph("Sin evidencia multimedia cargada.", note_style))
             elementos.append(Spacer(1, 6))
 
+        descripcion = (seccion.descripcion or "").strip()
+        if descripcion:
+            elementos.append(
+                Paragraph(f"<b>Descripcion:</b> {descripcion}", meta_style)
+            )
+            elementos.append(Spacer(1, 10))
+
         tiene_observaciones = False
         for observacion in seccion.observaciones:
             tiene_observaciones = True
@@ -158,6 +165,18 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
             elementos.append(
                 Paragraph(f"<b>Firmado por:</b> {firma.nombre}", meta_style)
             )
+            if firma.cedula:
+                elementos.append(
+                    Paragraph(f"<b>Cédula:</b> {firma.cedula}", meta_style)
+                )
+            if firma.celular:
+                elementos.append(
+                    Paragraph(f"<b>Celular:</b> {firma.celular}", meta_style)
+                )
+            if firma.correo:
+                elementos.append(
+                    Paragraph(f"<b>Correo electrónico:</b> {firma.correo}", meta_style)
+                )
             elementos.append(Spacer(1, 10))
 
             try:

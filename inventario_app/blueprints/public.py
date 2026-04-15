@@ -1,4 +1,5 @@
 from flask import Blueprint, current_app, render_template, request
+from sqlalchemy import func, or_
 
 from ..models import Inventario, Seccion
 from ..services.media_service import get_public_uploaded_file_url
@@ -15,6 +16,13 @@ def inventario_publico(token):
     per_page = current_app.config.get("PUBLIC_SECTIONS_PER_PAGE", 10)
     pagination = (
         Seccion.query.filter_by(inventario_id=inventario.id)
+        .filter(
+            or_(
+                func.trim(func.coalesce(Seccion.descripcion, "")) != "",
+                Seccion.fotos.any(),
+                Seccion.observaciones.any(),
+            )
+        )
         .order_by(Seccion.id.asc())
         .paginate(page=page, per_page=per_page, error_out=False)
     )

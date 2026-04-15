@@ -48,6 +48,20 @@ def ver_seccion(id):
     )
 
 
+@bp.route(
+    "/guardar_descripcion/<int:id>", methods=["POST"], endpoint="guardar_descripcion"
+)
+@login_required
+def guardar_descripcion(id):
+    require_edit_permission()
+    seccion = get_seccion_for_current_company_or_404(id)
+    seccion.descripcion = request.form.get("descripcion", "").strip() or None
+    db.session.commit()
+    current_app.logger.info("descripcion_updated seccion_id=%s", seccion.id)
+    flash("Descripcion guardada.", "success")
+    return redirect(url_for("secciones.ver_seccion", id=id))
+
+
 @bp.route("/subir_foto/<int:id>", methods=["POST"], endpoint="subir_foto")
 @login_required
 def subir_foto(id):
@@ -150,8 +164,11 @@ def eliminar_seccion(id):
     require_edit_permission()
     seccion = get_seccion_for_current_company_or_404(id)
     inventario_id = seccion.inventario_id
+    archivos = [foto.archivo for foto in seccion.fotos]
     db.session.delete(seccion)
     db.session.commit()
+    for archivo in archivos:
+        delete_uploaded_file(archivo)
     flash("Seccion eliminada.", "success")
     return redirect(url_for("inventarios.ver_inventario", id=inventario_id))
 

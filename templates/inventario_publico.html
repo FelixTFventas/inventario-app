@@ -50,6 +50,19 @@
         {% endif %}
 
         <div class="public-observations stack">
+          {% if s.descripcion %}
+          <article class="observation-card">
+            <strong>Descripción</strong>
+            <p>{{ s.descripcion }}</p>
+          </article>
+          {% else %}
+          <div class="empty-state">
+            <p>No hay descripción cargada en esta sección.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="public-observations stack">
           {% if s.observaciones %}
             {% for obs in s.observaciones %}
             <article class="observation-card">
