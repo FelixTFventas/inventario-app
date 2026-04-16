@@ -1,0 +1,31 @@
+<div
+  class="gallery-viewer"
+  id="gallery-viewer"
+  aria-hidden="true"
+  data-item-label="{{ gallery_item_label | default('Archivo') }}"
+>
+  <div class="gallery-viewer-dialog" role="dialog" aria-modal="true" aria-label="Visor de imágenes">
+    <button type="button" class="gallery-viewer-close" id="gallery-close" aria-label="Cerrar visor">&times;</button>
+    <button type="button" class="gallery-viewer-nav prev" id="gallery-prev" aria-label="Imagen anterior">&#8249;</button>
+    <button type="button" class="gallery-viewer-nav next" id="gallery-next" aria-label="Imagen siguiente">&#8250;</button>
+
+    <div class="gallery-viewer-frame">
+      <div class="gallery-viewer-media-shell">
+        <img id="gallery-image" class="gallery-viewer-media" alt="Vista ampliada de la evidencia">
+        <video id="gallery-video" class="gallery-viewer-media gallery-viewer-video is-hidden" controls playsinline></video>
+      </div>
+
+      <div class="gallery-viewer-footer">
+        <div class="gallery-viewer-caption">
+          <p class="gallery-viewer-title" id="gallery-title"></p>
+          <p class="gallery-viewer-count" id="gallery-count"></p>
+        </div>
+        <div class="gallery-viewer-toolbar">
+          <button type="button" class="gallery-viewer-action" id="gallery-zoom-out" aria-label="Alejar">-</button>
+          <button type="button" class="gallery-viewer-action" id="gallery-zoom-reset" aria-label="Restablecer zoom">100%</button>
+          <button type="button" class="gallery-viewer-action" id="gallery-zoom-in" aria-label="Acercar">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
