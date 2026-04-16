@@ -1,6 +1,5 @@
 from flask import (
     Blueprint,
-    current_app,
     flash,
     redirect,
     render_template,
@@ -9,7 +8,6 @@ from flask import (
 )
 from flask_login import login_required
 
-from ..extensions import db
 from ..models import Foto, Observacion, Seccion
 from ..services.access import (
     get_foto_for_current_company_or_404,
@@ -17,12 +15,16 @@ from ..services.access import (
     get_seccion_for_current_company_or_404,
     require_edit_permission,
 )
-from ..services.media_service import (
-    delete_uploaded_file,
-    get_uploaded_file_url,
-    save_uploaded_file,
+from ..services.media_service import get_uploaded_file_url
+from ..services.section_service import (
+    create_inventory_section,
+    create_section_observation,
+    delete_inventory_section,
+    delete_section_photo,
+    rename_section,
+    save_section_description,
+    upload_section_files,
 )
-from ..utils.files import validate_uploaded_file
 from ..utils.files import is_video_filename
 
 
@@ -55,9 +57,7 @@ def ver_seccion(id):
 def guardar_descripcion(id):
     require_edit_permission()
     seccion = get_seccion_for_current_company_or_404(id)
-    seccion.descripcion = request.form.get("descripcion", "").strip() or None
-    db.session.commit()
-    current_app.logger.info("descripcion_updated seccion_id=%s", seccion.id)
+    save_section_description(seccion, request.form.get("descripcion", ""))
     flash("Descripcion guardada.", "success")
     return redirect(url_for("secciones.ver_seccion", id=id))
 
@@ -67,43 +67,14 @@ def guardar_descripcion(id):
 def subir_foto(id):
     require_edit_permission()
     seccion = get_seccion_for_current_company_or_404(id)
-    archivos = request.files.getlist("fotos")
-    guardados = 0
+    result = upload_section_files(seccion, request.files.getlist("fotos"))
 
-    for archivo in archivos:
-        if not archivo or not archivo.filename:
-            continue
-        validation_error = validate_uploaded_file(archivo)
-        if validation_error:
-            current_app.logger.warning(
-                "upload_rejected seccion_id=%s filename=%s reason=%s",
-                seccion.id,
-                archivo.filename,
-                validation_error,
-            )
-            flash(validation_error, "error")
-            continue
+    for error in result.errors:
+        flash(error, "error")
 
-        try:
-            nombre_archivo = save_uploaded_file(archivo)
-        except Exception:
-            current_app.logger.exception(
-                "upload_failed seccion_id=%s filename=%s", seccion.id, archivo.filename
-            )
-            flash(f"No se pudo guardar el archivo: {archivo.filename}", "error")
-            continue
-
-        db.session.add(Foto(seccion_id=seccion.id, archivo=nombre_archivo))
-        guardados += 1
-
-    if guardados:
-        db.session.commit()
-        current_app.logger.info(
-            "upload_saved seccion_id=%s cantidad=%s", seccion.id, guardados
-        )
-        flash(f"Se subieron {guardados} archivo(s).", "success")
+    if result.saved_count:
+        flash(f"Se subieron {result.saved_count} archivo(s).", "success")
     else:
-        db.session.rollback()
         flash("No se pudo subir ningun archivo valido.", "error")
 
     return redirect(url_for("secciones.ver_seccion", id=id))
@@ -114,11 +85,7 @@ def subir_foto(id):
 def eliminar_foto(id):
     require_edit_permission()
     foto = get_foto_for_current_company_or_404(id)
-    seccion_id = foto.seccion_id
-    db.session.delete(foto)
-    db.session.commit()
-    delete_uploaded_file(foto.archivo)
-    current_app.logger.info("upload_deleted foto_id=%s seccion_id=%s", id, seccion_id)
+    seccion_id = delete_section_photo(foto)
     flash("Archivo eliminado.", "success")
     return redirect(url_for("secciones.ver_seccion", id=seccion_id))
 
@@ -128,15 +95,11 @@ def eliminar_foto(id):
 def crear_observacion(id):
     require_edit_permission()
     seccion = get_seccion_for_current_company_or_404(id)
-    comentario = request.form.get("comentario", "").strip()
 
-    if not comentario:
+    if not create_section_observation(seccion, request.form.get("comentario", "")):
         flash("La observacion no puede estar vacia.", "error")
         return redirect(url_for("secciones.ver_seccion", id=id))
 
-    db.session.add(Observacion(seccion_id=seccion.id, comentario=comentario))
-    db.session.commit()
-    current_app.logger.info("observacion_created seccion_id=%s", seccion.id)
     flash("Observacion guardada.", "success")
     return redirect(url_for("secciones.ver_seccion", id=id))
 
@@ -146,14 +109,11 @@ def crear_observacion(id):
 def crear_seccion(id):
     require_edit_permission()
     inventario = get_inventario_for_current_company_or_404(id)
-    nombre = request.form.get("nombre", "").strip()
 
-    if not nombre:
+    if not create_inventory_section(inventario.id, request.form.get("nombre", "")):
         flash("Debes indicar el nombre de la seccion.", "error")
         return redirect(url_for("inventarios.ver_inventario", id=id))
 
-    db.session.add(Seccion(inventario_id=inventario.id, nombre=nombre))
-    db.session.commit()
     flash("Seccion creada correctamente.", "success")
     return redirect(url_for("inventarios.ver_inventario", id=id))
 
@@ -163,12 +123,7 @@ def crear_seccion(id):
 def eliminar_seccion(id):
     require_edit_permission()
     seccion = get_seccion_for_current_company_or_404(id)
-    inventario_id = seccion.inventario_id
-    archivos = [foto.archivo for foto in seccion.fotos]
-    db.session.delete(seccion)
-    db.session.commit()
-    for archivo in archivos:
-        delete_uploaded_file(archivo)
+    inventario_id = delete_inventory_section(seccion)
     flash("Seccion eliminada.", "success")
     return redirect(url_for("inventarios.ver_inventario", id=inventario_id))
 
@@ -182,13 +137,10 @@ def editar_seccion(id):
 
     if request.method == "POST":
         require_edit_permission()
-        nombre = request.form.get("nombre", "").strip()
-        if not nombre:
+        if not rename_section(seccion, request.form.get("nombre", "")):
             flash("El nombre no puede estar vacio.", "error")
             return redirect(url_for("secciones.editar_seccion", id=id))
 
-        seccion.nombre = nombre
-        db.session.commit()
         flash("Seccion actualizada.", "success")
         return redirect(url_for("inventarios.ver_inventario", id=seccion.inventario_id))
 

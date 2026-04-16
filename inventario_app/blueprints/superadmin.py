@@ -9,19 +9,18 @@ from flask import (
     url_for,
 )
 from flask_login import login_required
-from werkzeug.security import generate_password_hash
 
 from ..constants import (
-    INTERNAL_COMPANY_SLUG,
-    ROLE_ADMIN,
     STATUS_ACTIVE,
-    STATUS_CANCELLED,
-    VALID_COMPANY_STATUSES,
 )
 from ..extensions import db
-from ..models import Empresa, Usuario
+from ..models import Empresa
 from ..services.access import require_superadmin_permission
-from ..services.company_service import unique_company_slug
+from ..services.superadmin_service import (
+    create_company_with_primary_admin,
+    list_managed_companies,
+    update_company_status,
+)
 
 
 bp = Blueprint("superadmin", __name__)
@@ -35,55 +34,21 @@ def superadmin_empresas():
     require_superadmin_permission()
 
     if request.method == "POST":
-        empresa_nombre = request.form.get("empresa", "").strip()
-        admin_nombre = request.form.get("nombre", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        password_raw = request.form.get("password", "")
-        estado = request.form.get("estado", STATUS_ACTIVE).strip()
-
-        if not empresa_nombre or not admin_nombre or not email or not password_raw:
-            flash(
-                "Empresa, admin, correo y contrasena temporal son obligatorios.",
-                "error",
-            )
-            return redirect(url_for("superadmin.superadmin_empresas"))
-
-        if estado not in VALID_COMPANY_STATUSES:
-            flash("Selecciona un estado valido para la empresa.", "error")
-            return redirect(url_for("superadmin.superadmin_empresas"))
-
-        existe = Usuario.query.filter_by(email=email).first()
-        if existe:
-            flash("Ese correo ya esta registrado.", "error")
-            return redirect(url_for("superadmin.superadmin_empresas"))
-
-        empresa = Empresa(
-            nombre=empresa_nombre,
-            slug=unique_company_slug(empresa_nombre),
-            estado=estado,
-            activo=True,
+        result = create_company_with_primary_admin(
+            request.form.get("empresa", ""),
+            request.form.get("nombre", ""),
+            request.form.get("email", ""),
+            request.form.get("password", ""),
+            request.form.get("estado", STATUS_ACTIVE),
         )
-        db.session.add(empresa)
-        db.session.flush()
+        if not result.is_valid:
+            flash(result.error_message, "error")
+            return redirect(url_for("superadmin.superadmin_empresas"))
 
-        nuevo = Usuario(
-            nombre=admin_nombre,
-            email=email,
-            password=generate_password_hash(password_raw),
-            empresa_id=empresa.id,
-            rol=ROLE_ADMIN,
-            activo=True,
-        )
-        db.session.add(nuevo)
-        db.session.commit()
         flash("Empresa creada correctamente con su admin principal.", "success")
         return redirect(url_for("superadmin.superadmin_empresas"))
 
-    empresas = (
-        Empresa.query.filter(Empresa.slug != INTERNAL_COMPANY_SLUG)
-        .order_by(Empresa.nombre.asc())
-        .all()
-    )
+    empresas = list_managed_companies()
     return render_template("superadmin_empresas.html", empresas=empresas)
 
 
@@ -99,16 +64,15 @@ def superadmin_actualizar_estado_empresa(id):
     if not empresa:
         abort(404)
 
-    estado = request.form.get("estado", "").strip()
-    if estado not in VALID_COMPANY_STATUSES:
-        flash("Selecciona un estado valido.", "error")
+    result = update_company_status(empresa, request.form.get("estado", ""))
+    if not result.is_valid:
+        flash(result.error_message, "error")
         return redirect(url_for("superadmin.superadmin_empresas"))
 
-    empresa.estado = estado
-    empresa.activo = estado != STATUS_CANCELLED
-    db.session.commit()
-
-    if estado != STATUS_ACTIVE and session.get("superadmin_company_id") == empresa.id:
+    if (
+        empresa.estado != STATUS_ACTIVE
+        and session.get("superadmin_company_id") == empresa.id
+    ):
         session.pop("superadmin_company_id", None)
 
     flash("Estado de la empresa actualizado correctamente.", "success")
