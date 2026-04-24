@@ -1,4 +1,5 @@
 import base64
+from html import escape
 from io import BytesIO
 
 from reportlab.lib import colors
@@ -14,15 +15,12 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from .media_service import get_pdf_dir, get_upload_dir
+from .media_service import get_uploaded_file_bytes, upload_pdf_bytes
 
 
 def build_inventory_pdf(inventario, secciones, firmas) -> str:
     inmueble = inventario.inmueble
     nombre_pdf = f"inventario_{inventario.id}.pdf"
-    pdf_dir = get_pdf_dir()
-    upload_dir = get_upload_dir()
-    ruta_pdf = pdf_dir / nombre_pdf
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -90,16 +88,16 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
         Paragraph("Inventario de Entrega de Inmueble", title_style),
         Paragraph("Resumen general del recorrido documentado.", note_style),
         Spacer(1, 12),
-        Paragraph(f"<b>Empresa:</b> {inmueble.empresa.nombre}", meta_style),
-        Paragraph(f"<b>Direccion:</b> {inmueble.direccion}", meta_style),
-        Paragraph(f"<b>Fecha de recepcion:</b> {inmueble.fecha_recepcion}", meta_style),
-        Paragraph(f"<b>Inventario:</b> {inventario.nombre}", meta_style),
-        Paragraph(f"<b>Fecha inventario:</b> {inventario.fecha}", meta_style),
+        Paragraph(_label_value("Empresa", inmueble.empresa.nombre), meta_style),
+        Paragraph(_label_value("Direccion", inmueble.direccion), meta_style),
+        Paragraph(_label_value("Fecha de recepcion", inmueble.fecha_recepcion), meta_style),
+        Paragraph(_label_value("Inventario", inventario.nombre), meta_style),
+        Paragraph(_label_value("Fecha inventario", inventario.fecha), meta_style),
         Spacer(1, 18),
     ]
 
     for seccion in secciones:
-        elementos.append(Paragraph(f"Seccion: {seccion.nombre}", section_style))
+        elementos.append(Paragraph(f"Seccion: {_safe_text(seccion.nombre)}", section_style))
         elementos.append(
             Paragraph(
                 f"<b>Archivos:</b> {len(seccion.fotos)} | <b>Observaciones:</b> {len(seccion.observaciones)}",
@@ -110,14 +108,16 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
         tiene_evidencia = False
         galeria = []
         for foto in seccion.fotos:
-            ruta_archivo = upload_dir / foto.archivo
-            if not ruta_archivo.exists():
+            archivo_bytes = get_uploaded_file_bytes(foto.archivo)
+            if not archivo_bytes:
                 continue
 
             tiene_evidencia = True
             ext = foto.archivo.rsplit(".", 1)[-1].lower()
             if ext in {"jpg", "jpeg", "png", "gif", "webp"}:
-                imagen = Image(str(ruta_archivo))
+                imagen_buffer = BytesIO(archivo_bytes)
+                imagen = Image(imagen_buffer)
+                imagen._source_buffer = imagen_buffer
                 imagen._restrictSize(2.6 * inch, 2.1 * inch)
                 galeria.append(imagen)
             else:
@@ -125,7 +125,7 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
                     _append_gallery(elementos, galeria)
                     galeria = []
                 elementos.append(
-                    Paragraph(f"<b>Video adjunto:</b> {foto.archivo}", note_style)
+                    Paragraph(_label_value("Video adjunto", foto.archivo), note_style)
                 )
 
         if galeria:
@@ -138,16 +138,14 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
 
         descripcion = (seccion.descripcion or "").strip()
         if descripcion:
-            elementos.append(
-                Paragraph(f"<b>Descripcion:</b> {descripcion}", meta_style)
-            )
+            elementos.append(Paragraph(_label_value("Descripcion", descripcion), meta_style))
             elementos.append(Spacer(1, 10))
 
         tiene_observaciones = False
         for observacion in seccion.observaciones:
             tiene_observaciones = True
             elementos.append(
-                Paragraph(f"<b>Observacion:</b> {observacion.comentario}", meta_style)
+                Paragraph(_label_value("Observacion", observacion.comentario), meta_style)
             )
             elementos.append(Spacer(1, 10))
 
@@ -162,20 +160,14 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
         elementos.append(Spacer(1, 18))
 
         for firma in firmas:
-            elementos.append(
-                Paragraph(f"<b>Firmado por:</b> {firma.nombre}", meta_style)
-            )
+            elementos.append(Paragraph(_label_value("Firmado por", firma.nombre), meta_style))
             if firma.cedula:
-                elementos.append(
-                    Paragraph(f"<b>Cédula:</b> {firma.cedula}", meta_style)
-                )
+                elementos.append(Paragraph(_label_value("Cédula", firma.cedula), meta_style))
             if firma.celular:
-                elementos.append(
-                    Paragraph(f"<b>Celular:</b> {firma.celular}", meta_style)
-                )
+                elementos.append(Paragraph(_label_value("Celular", firma.celular), meta_style))
             if firma.correo:
                 elementos.append(
-                    Paragraph(f"<b>Correo electrónico:</b> {firma.correo}", meta_style)
+                    Paragraph(_label_value("Correo electrónico", firma.correo), meta_style)
                 )
             elementos.append(Spacer(1, 10))
 
@@ -192,8 +184,9 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
                 )
                 elementos.append(Spacer(1, 20))
 
+    pdf_buffer = BytesIO()
     pdf = SimpleDocTemplate(
-        str(ruta_pdf),
+        pdf_buffer,
         pagesize=letter,
         leftMargin=36,
         rightMargin=36,
@@ -205,6 +198,7 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
         onFirstPage=dibujar_encabezado_y_pie,
         onLaterPages=dibujar_encabezado_y_pie,
     )
+    upload_pdf_bytes(nombre_pdf, pdf_buffer.getvalue())
     return nombre_pdf
 
 
@@ -226,3 +220,11 @@ def _append_gallery(elementos, galeria) -> None:
         )
     )
     elementos.append(tabla_galeria)
+
+
+def _safe_text(value) -> str:
+    return escape("" if value is None else str(value))
+
+
+def _label_value(label: str, value) -> str:
+    return f"<b>{escape(label)}:</b> {_safe_text(value)}"

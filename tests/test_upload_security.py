@@ -1,8 +1,8 @@
 from io import BytesIO
-from pathlib import Path
 
 from inventario_app.extensions import db
 from inventario_app.models import Foto
+from inventario_app.services.media_service import get_pdf_object_key, get_upload_object_key
 
 
 def test_upload_rejects_mismatched_image_mimetype(client, login, seeded_data, app):
@@ -56,8 +56,10 @@ def test_uploaded_media_is_served_from_media_route(client, login, seeded_data, a
         assert foto is not None
         response = client.get(f"/media/uploads/{foto.id}")
 
-    assert response.status_code == 200
-    assert response.data == b"fake png content"
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(
+        f"/test-bucket/{get_upload_object_key(foto.archivo)}?expires=300"
+    )
 
 
 def test_uploaded_media_requires_company_access(client, login, seeded_data, app):
@@ -67,8 +69,12 @@ def test_uploaded_media_requires_company_access(client, login, seeded_data, app)
         db.session.commit()
         foto_id = foto.id
 
-    upload_path = Path(app.config["UPLOAD_FOLDER"]) / "privada.png"
-    upload_path.write_bytes(b"private image")
+    app.extensions["s3_client"].put_object(
+        Bucket=app.config["S3_BUCKET_NAME"],
+        Key=get_upload_object_key("privada.png"),
+        Body=b"private image",
+        ContentType="image/png",
+    )
 
     anonymous_response = client.get(f"/media/uploads/{foto_id}", follow_redirects=False)
     assert anonymous_response.status_code == 302
@@ -85,14 +91,20 @@ def test_public_media_route_requires_matching_token(client, seeded_data, app):
         db.session.commit()
         foto_id = foto.id
 
-    upload_path = Path(app.config["UPLOAD_FOLDER"]) / "publica.png"
-    upload_path.write_bytes(b"public image")
+    app.extensions["s3_client"].put_object(
+        Bucket=app.config["S3_BUCKET_NAME"],
+        Key=get_upload_object_key("publica.png"),
+        Body=b"public image",
+        ContentType="image/png",
+    )
 
     ok_response = client.get(
         f"/publico/{seeded_data['inventario_a'].token}/media/{foto_id}"
     )
-    assert ok_response.status_code == 200
-    assert ok_response.data == b"public image"
+    assert ok_response.status_code == 302
+    assert ok_response.headers["Location"].endswith(
+        f"/test-bucket/{get_upload_object_key('publica.png')}?expires=300"
+    )
 
     bad_response = client.get(
         f"/publico/{seeded_data['inventario_b'].token}/media/{foto_id}"
@@ -101,11 +113,13 @@ def test_public_media_route_requires_matching_token(client, seeded_data, app):
 
 
 def test_generated_pdf_route_requires_login(client, login, seeded_data, app):
-    pdf_path = (
-        Path(app.config["PDF_FOLDER"])
-        / f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    filename = f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    app.extensions["s3_client"].put_object(
+        Bucket=app.config["S3_BUCKET_NAME"],
+        Key=get_pdf_object_key(filename),
+        Body=b"%PDF-1.4\nmock pdf",
+        ContentType="application/pdf",
     )
-    pdf_path.write_bytes(b"%PDF-1.4\nmock pdf")
 
     anonymous_response = client.get(
         f"/media/pdfs/{seeded_data['inventario_a'].id}", follow_redirects=False
@@ -119,16 +133,20 @@ def test_generated_pdf_route_requires_login(client, login, seeded_data, app):
     login(seeded_data["admin_a"].email)
     authenticated_response = client.get(f"/media/pdfs/{seeded_data['inventario_a'].id}")
 
-    assert authenticated_response.status_code == 200
-    assert authenticated_response.data == b"%PDF-1.4\nmock pdf"
+    assert authenticated_response.status_code == 302
+    assert authenticated_response.headers["Location"].endswith(
+        f"/test-bucket/{get_pdf_object_key(filename)}?expires=300"
+    )
 
 
 def test_generated_pdf_route_blocks_other_company(client, login, seeded_data, app):
-    pdf_path = (
-        Path(app.config["PDF_FOLDER"])
-        / f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    filename = f"inventario_{seeded_data['inventario_a'].id}.pdf"
+    app.extensions["s3_client"].put_object(
+        Bucket=app.config["S3_BUCKET_NAME"],
+        Key=get_pdf_object_key(filename),
+        Body=b"%PDF-1.4\nprivate pdf",
+        ContentType="application/pdf",
     )
-    pdf_path.write_bytes(b"%PDF-1.4\nprivate pdf")
 
     login(seeded_data["admin_b"].email)
     response = client.get(f"/media/pdfs/{seeded_data['inventario_a'].id}")

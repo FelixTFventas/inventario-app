@@ -37,9 +37,15 @@ class Config:
     SQLALCHEMY_DATABASE_URI = normalize_database_url(os.environ.get("DATABASE_URL"))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    STORAGE_BACKEND = os.environ.get("STORAGE_BACKEND", "local").lower()
     STORAGE_ROOT = str(STORAGE_ROOT)
     UPLOAD_FOLDER = str(UPLOAD_DIR)
     PDF_FOLDER = str(PDF_DIR)
+    AWS_REGION = os.environ.get("AWS_REGION")
+    S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
+    S3_UPLOAD_PREFIX = os.environ.get("S3_UPLOAD_PREFIX", "uploads")
+    S3_PDF_PREFIX = os.environ.get("S3_PDF_PREFIX", "pdfs")
+    S3_SIGNED_URL_EXPIRES = int(os.environ.get("S3_SIGNED_URL_EXPIRES", 300))
     DASHBOARD_PER_PAGE = int(os.environ.get("DASHBOARD_PER_PAGE", 12))
     PUBLIC_SECTIONS_PER_PAGE = int(os.environ.get("PUBLIC_SECTIONS_PER_PAGE", 10))
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 32 * 1024 * 1024))

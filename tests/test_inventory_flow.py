@@ -1,7 +1,6 @@
-from pathlib import Path
-
 from inventario_app.extensions import db
 from inventario_app.models import Foto, Inmueble, Inventario, Seccion
+from inventario_app.services.media_service import get_upload_object_key
 
 
 def test_admin_can_create_inmueble(client, login, seeded_data, app):
@@ -110,8 +109,13 @@ def test_deleting_section_removes_uploaded_files(client, login, seeded_data, app
         db.session.add(foto)
         db.session.commit()
 
-    upload_path = Path(app.config["UPLOAD_FOLDER"]) / "temporal.png"
-    upload_path.write_bytes(b"temporary file")
+    object_key = get_upload_object_key("temporal.png")
+    app.extensions["s3_client"].put_object(
+        Bucket=app.config["S3_BUCKET_NAME"],
+        Key=object_key,
+        Body=b"temporary file",
+        ContentType="image/png",
+    )
 
     response = client.post(
         f"/eliminar_seccion/{seeded_data['seccion_a'].id}",
@@ -119,7 +123,7 @@ def test_deleting_section_removes_uploaded_files(client, login, seeded_data, app
     )
 
     assert response.status_code == 302
-    assert not upload_path.exists()
+    assert (app.config["S3_BUCKET_NAME"], object_key) not in app.extensions["s3_client"].objects
     with app.app_context():
         assert db.session.get(Seccion, seeded_data["seccion_a"].id) is None
         assert Foto.query.filter_by(seccion_id=seeded_data["seccion_a"].id).count() == 0

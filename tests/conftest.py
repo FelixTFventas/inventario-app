@@ -1,4 +1,5 @@
 import sys
+from io import BytesIO
 from datetime import date
 from pathlib import Path
 
@@ -15,6 +16,43 @@ from inventario_app.extensions import db
 from inventario_app.models import Empresa, Inmueble, Inventario, Seccion, Usuario
 
 
+class FakeS3Client:
+    def __init__(self):
+        self.objects = {}
+
+    def upload_fileobj(self, fileobj, bucket, key, ExtraArgs=None):
+        fileobj.seek(0)
+        self.objects[(bucket, key)] = {
+            "Body": fileobj.read(),
+            "ContentType": (ExtraArgs or {}).get("ContentType", "application/octet-stream"),
+        }
+
+    def put_object(self, Bucket, Key, Body, ContentType=None):
+        payload = Body if isinstance(Body, bytes) else Body.read()
+        self.objects[(Bucket, Key)] = {
+            "Body": payload,
+            "ContentType": ContentType or "application/octet-stream",
+        }
+
+    def get_object(self, Bucket, Key):
+        item = self.objects[(Bucket, Key)]
+        return {"Body": BytesIO(item["Body"]), "ContentType": item["ContentType"]}
+
+    def delete_object(self, Bucket, Key):
+        self.objects.pop((Bucket, Key), None)
+
+    def head_object(self, Bucket, Key):
+        if (Bucket, Key) not in self.objects:
+            raise KeyError(Key)
+        return {}
+
+    def generate_presigned_url(self, _operation_name, Params, ExpiresIn):
+        return (
+            f"https://fake-s3.local/{Params['Bucket']}/{Params['Key']}"
+            f"?expires={ExpiresIn}"
+        )
+
+
 @pytest.fixture()
 def app(tmp_path):
     database_path = tmp_path / "test.db"
@@ -28,11 +66,17 @@ def app(tmp_path):
             "TESTING": True,
             "WTF_CSRF_ENABLED": False,
             "SKIP_DATA_SEED": True,
+            "STORAGE_BACKEND": "s3",
             "SQLALCHEMY_DATABASE_URI": f"sqlite:///{database_path}",
             "UPLOAD_FOLDER": str(upload_dir),
             "PDF_FOLDER": str(pdf_dir),
+            "S3_BUCKET_NAME": "test-bucket",
+            "S3_UPLOAD_PREFIX": "uploads",
+            "S3_PDF_PREFIX": "pdfs",
+            "S3_SIGNED_URL_EXPIRES": 300,
         }
     )
+    app.extensions["s3_client"] = FakeS3Client()
 
     with app.app_context():
         db.drop_all()

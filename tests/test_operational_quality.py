@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from inventario_app.extensions import db
 from inventario_app.models import Firma, Foto, Inmueble, Observacion, Seccion
+from inventario_app.services.media_service import get_upload_object_key
 from inventario_app.services import pdf_service
 
 
@@ -194,8 +195,6 @@ def test_pdf_only_uses_sections_with_description(client, login, seeded_data, app
 
 
 def test_pdf_places_description_between_media_and_observations(app, seeded_data):
-    from pathlib import Path
-
     captured = []
 
     class FakeDoc:
@@ -221,7 +220,12 @@ def test_pdf_places_description_between_media_and_observations(app, seeded_data)
         db.session.add(Foto(seccion_id=seccion.id, archivo="orden.jpg"))
         db.session.commit()
 
-        Path(app.config["UPLOAD_FOLDER"], "orden.jpg").write_bytes(b"fake image bytes")
+        app.extensions["s3_client"].put_object(
+            Bucket=app.config["S3_BUCKET_NAME"],
+            Key=get_upload_object_key("orden.jpg"),
+            Body=b"fake image bytes",
+            ContentType="image/jpeg",
+        )
 
         with (
             patch.object(pdf_service, "SimpleDocTemplate", FakeDoc),

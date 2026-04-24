@@ -28,7 +28,7 @@ from .services.access import (
     user_is_superadmin,
 )
 from .services.bootstrap_service import seed_initial_data
-from .services.media_service import ensure_storage_dirs
+from .services.media_service import ensure_storage_dirs, validate_storage_config
 
 
 def create_app(config_overrides: dict | None = None) -> Flask:
@@ -43,6 +43,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
         app.config.update(config_overrides)
 
     _configure_logging(app)
+    validate_storage_config(app)
 
     db.init_app(app)
     csrf.init_app(app)
