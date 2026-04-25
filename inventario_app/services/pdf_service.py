@@ -124,9 +124,6 @@ def build_inventory_pdf(inventario, secciones, firmas) -> str:
                 if galeria:
                     _append_gallery(elementos, galeria)
                     galeria = []
-                elementos.append(
-                    Paragraph(_label_value("Video adjunto", foto.archivo), note_style)
-                )
 
         if galeria:
             _append_gallery(elementos, galeria)
